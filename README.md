@@ -4,7 +4,26 @@
 
 VRHost Lab is a modern, web-based network lab management platform that simplifies virtual router deployment and management. Built with Python FastAPI and React, it provides an intuitive interface for creating and managing network lab environments.
 
-![VRHost Lab Dashboard](docs/screenshot-dashboard.png)
+## 🚀 Quick Install
+
+**One-command installation on Ubuntu 22.04+:**
+```bash
+git clone https://github.com/Dubzyy/vrhost-lab.git
+cd vrhost-lab
+sudo ./install.sh
+```
+
+**That's it!** Installation takes ~5 minutes and includes:
+- All dependencies (libvirt, Node.js, Python)
+- Backend API + Frontend UI
+- Systemd services (auto-start on boot)
+- Production build
+
+Then access at: `http://YOUR_SERVER_IP:3000`
+
+📖 **[Full Installation Guide](INSTALL.md)** | 🔧 **[Manual Installation](#manual-installation)**
+
+---
 
 ## ✨ Features
 
@@ -31,70 +50,11 @@ VRHost Lab is a modern, web-based network lab management platform that simplifie
 - **Beautiful UI**: Dark theme with responsive design
 - **Fast**: Built on FastAPI for high performance
 
-## 🚀 Quick Start
+## 📊 Screenshots
 
-### Prerequisites
-- Ubuntu 22.04+ (or similar Linux)
-- KVM/QEMU with libvirt
-- Python 3.10+
-- Node.js 20+
+![VRHost Lab Dashboard](https://via.placeholder.com/800x450/111827/10b981?text=Dashboard+Screenshot)
 
-### Backend Installation
-```bash
-# Clone the repository
-git clone https://github.com/Dubzyy/vrhost-lab.git
-cd vrhost-lab
-
-# Create Python virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install fastapi uvicorn[standard] libvirt-python pydantic websockets python-multipart
-
-# Start the API server
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-API will be available at: `http://localhost:8000`  
-API Documentation: `http://localhost:8000/docs`
-
-### Frontend Installation
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-```
-
-Frontend will be available at: `http://localhost:3000`
-
-## 📚 Architecture
-```
-vrhost-lab/
-├── backend/
-│   ├── main.py              # FastAPI application
-│   ├── models/              # Pydantic models
-│   │   ├── router.py
-│   │   ├── topology.py
-│   │   └── lab.py
-│   └── services/            # Business logic
-│       ├── router_service.py
-│       ├── stats_service.py
-│       ├── topology_service.py
-│       └── lab_service.py
-├── frontend/
-│   ├── src/
-│   │   ├── App.js           # Main React component
-│   │   └── services/
-│   │       └── api.js       # API client
-│   └── package.json
-├── labs/                    # Lab definitions
-└── topologies/              # Saved topologies
-```
+*Beautiful dark-themed interface with multi-lab support*
 
 ## 🎯 Usage
 
@@ -110,6 +70,9 @@ vrhost-lab/
 Routers are associated with labs via naming convention:
 - Lab name: `jncis-sp`
 - Router names: `jncis-sp-r1`, `jncis-sp-r2`, `jncis-sp-r3`
+
+**Via Web UI:**
+Click "+ New Router" button (coming soon)
 
 **Via API:**
 ```bash
@@ -134,11 +97,6 @@ curl -X POST http://localhost:8000/api/labs/jncis-sp/start
 **Stop all routers in a lab:**
 ```bash
 curl -X POST http://localhost:8000/api/labs/jncis-sp/stop
-```
-
-**List all labs:**
-```bash
-curl http://localhost:8000/api/labs
 ```
 
 ## 🔌 API Endpoints
@@ -171,13 +129,65 @@ curl http://localhost:8000/api/labs
 - `GET /api/topologies/{name}` - Load topology
 - `DELETE /api/topologies/{name}` - Delete topology
 
-### Bulk Operations
-- `POST /api/routers/bulk/start-all` - Start all routers
-- `POST /api/routers/bulk/stop-all` - Stop all routers
+Full API documentation: `http://localhost:8000/docs`
 
-Full API documentation available at `/docs` endpoint (Swagger UI)
+## 🛠️ Management
 
-## 🛠️ Tech Stack
+### Service Commands
+```bash
+# Check status
+systemctl status vrhost-api
+systemctl status vrhost-web
+
+# Restart services
+systemctl restart vrhost-api
+systemctl restart vrhost-web
+
+# View logs
+journalctl -u vrhost-api -f
+journalctl -u vrhost-web -f
+```
+
+### Update VRHost Lab
+```bash
+cd /opt/vrhost-lab
+sudo ./update.sh
+```
+
+### Uninstall
+```bash
+cd /opt/vrhost-lab
+sudo ./uninstall.sh
+```
+
+## 📚 Architecture
+```
+vrhost-lab/
+├── backend/
+│   ├── main.py              # FastAPI application
+│   ├── models/              # Pydantic models
+│   │   ├── router.py
+│   │   ├── topology.py
+│   │   └── lab.py
+│   └── services/            # Business logic
+│       ├── router_service.py
+│       ├── stats_service.py
+│       ├── topology_service.py
+│       └── lab_service.py
+├── frontend/
+│   ├── src/
+│   │   ├── App.js           # Main React component
+│   │   └── services/
+│   │       └── api.js       # API client
+│   └── package.json
+├── labs/                    # Lab definitions
+├── topologies/              # Saved topologies
+├── install.sh               # Automated installer
+├── update.sh                # Update script
+└── uninstall.sh             # Uninstaller
+```
+
+## 🔧 Tech Stack
 
 **Backend:**
 - Python 3.10
@@ -197,28 +207,75 @@ Full API documentation available at `/docs` endpoint (Swagger UI)
 - libvirt
 - vSRX (Juniper)
 
-## 🎨 Screenshots
+## 💻 Manual Installation
 
-*Coming soon - add screenshots of:*
-- Dashboard with multiple labs
-- Router management interface
-- Lab creation modal
-- System statistics view
+<details>
+<summary>Click to expand manual installation steps</summary>
+
+### Prerequisites
+- Ubuntu 22.04+ (or similar Linux)
+- KVM/QEMU with libvirt
+- Python 3.10+
+- Node.js 20+
+
+### Backend Setup
+```bash
+# Clone repository
+git clone https://github.com/Dubzyy/vrhost-lab.git
+cd vrhost-lab
+
+# Install system dependencies
+sudo apt install -y libvirt-daemon-system libvirt-clients qemu-kvm \
+    python3 python3-pip python3-venv python3-dev libvirt-dev pkg-config gcc
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python packages
+pip install fastapi uvicorn[standard] libvirt-python pydantic websockets python-multipart
+
+# Start API server
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Frontend Setup
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+```
+
+For production deployment, see [INSTALL.md](INSTALL.md)
+</details>
 
 ## 🗺️ Roadmap
 
-- [ ] Visual topology builder
+- [ ] Visual topology builder with drag-and-drop
+- [ ] Router creation via web UI (modal form)
+- [ ] Web-based console access (noVNC/xterm.js)
 - [ ] Multi-host support (manage multiple servers)
-- [ ] Console access via web terminal
 - [ ] Network configuration templates
-- [ ] Automated lab provisioning
+- [ ] Automated lab provisioning from templates
 - [ ] RBAC (Role-Based Access Control)
-- [ ] Lab sharing and export
+- [ ] Lab sharing and import/export
 - [ ] Support for additional platforms (Cisco, Arista, etc.)
+- [ ] Performance metrics and graphs
+- [ ] Scheduled lab start/stop
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📝 License
 
@@ -236,14 +293,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built for the networking community
 - Inspired by EVE-NG and GNS3
 - Designed for simplicity and speed
+- Thanks to all contributors and users
 
-## 📊 Stats
+## 📊 Project Stats
 
 - **26+ API endpoints**
+- **7 commits** (and growing!)
 - **Full-stack application**
 - **Production-ready**
-- **Open source**
+- **Open source MIT**
+- **Active development**
+
+## ⭐ Star History
+
+If you find VRHost Lab useful, please consider giving it a star on GitHub!
 
 ---
 
 **Built with ❤️ by a NOC engineer who wanted better lab tooling**
+
+**[Get Started →](INSTALL.md)** | **[API Docs →](http://localhost:8000/docs)** | **[Report Issues →](https://github.com/Dubzyy/vrhost-lab/issues)**
