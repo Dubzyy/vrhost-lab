@@ -161,7 +161,8 @@ systemctl start vrhost-web
 echo "✓ Services started and enabled"
 
 # Get server IP
-SERVER_IP=$(hostname -I | awk '{print $1}')
+# Get the primary non-loopback IP
+SERVER_IP=$(ip route get 1.1.1.1 | grep -oP 'src \K[\d.]+' || hostname -I | awk '{print $1}')
 
 echo ""
 echo "============================================"
