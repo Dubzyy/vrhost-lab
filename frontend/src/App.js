@@ -8,14 +8,25 @@ function App() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showNewLabModal, setShowNewLabModal] = useState(false);
+  const [showNewRouterModal, setShowNewRouterModal] = useState(false);
+  
+  // New Lab form
   const [newLabName, setNewLabName] = useState('');
   const [newLabDesc, setNewLabDesc] = useState('');
+  
+  // New Router form
+  const [newRouterName, setNewRouterName] = useState('');
+  const [newRouterIP, setNewRouterIP] = useState('');
+  const [newRouterType, setNewRouterType] = useState('vsrx');
+  const [newRouterRAM, setNewRouterRAM] = useState(4);
+  const [newRouterCPUs, setNewRouterCPUs] = useState(2);
+  const [routerCreating, setRouterCreating] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadData();
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLab]);
 
   const loadData = async () => {
@@ -28,7 +39,6 @@ function App() {
       setLabs(labsRes.data);
       setStats(statsRes.data);
       
-      // Load routers for selected lab
       if (selectedLab) {
         const routersRes = await labAPI.routers(selectedLab);
         setRouters(routersRes.data.routers);
@@ -53,6 +63,38 @@ function App() {
       loadData();
     } catch (error) {
       alert('Failed to create lab: ' + error.message);
+    }
+  };
+
+  const createRouter = async () => {
+    if (!newRouterName || !newRouterIP) {
+      alert('Please fill in router name and IP address');
+      return;
+    }
+
+    setRouterCreating(true);
+    try {
+      await routerAPI.create({
+        name: newRouterName,
+        ip: newRouterIP,
+        router_type: newRouterType,
+        ram_gb: newRouterRAM,
+        vcpus: newRouterCPUs
+      });
+      
+      setShowNewRouterModal(false);
+      setNewRouterName('');
+      setNewRouterIP('');
+      setNewRouterType('vsrx');
+      setNewRouterRAM(4);
+      setNewRouterCPUs(2);
+      loadData();
+      
+      alert('Router created successfully! It will take ~90 seconds to boot.');
+    } catch (error) {
+      alert('Failed to create router: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setRouterCreating(false);
     }
   };
 
@@ -137,7 +179,10 @@ function App() {
               >
                 + New Lab
               </button>
-              <button className="bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+              <button 
+                onClick={() => setShowNewRouterModal(true)}
+                className="bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+              >
                 + New Router
               </button>
             </div>
@@ -146,7 +191,6 @@ function App() {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-vrhost-dark p-6 rounded-lg border border-gray-700">
@@ -174,7 +218,6 @@ function App() {
           </div>
         )}
 
-        {/* Labs Section */}
         <div className="bg-vrhost-dark rounded-lg border border-gray-700 overflow-hidden mb-8">
           <div className="p-6 border-b border-gray-700 flex justify-between items-center">
             <h2 className="text-xl font-bold text-white">Labs</h2>
@@ -228,7 +271,6 @@ function App() {
           </div>
         </div>
 
-        {/* Routers Section */}
         <div className="bg-vrhost-dark rounded-lg border border-gray-700 overflow-hidden">
           <div className="p-6 border-b border-gray-700">
             <h2 className="text-xl font-bold text-white">
@@ -334,6 +376,91 @@ function App() {
                 <button
                   onClick={() => setShowNewLabModal(false)}
                   className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Router Modal */}
+      {showNewRouterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-vrhost-dark p-8 rounded-lg border border-gray-700 w-full max-w-lg">
+            <h2 className="text-2xl font-bold text-white mb-6">Create New Router</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Router Name *</label>
+                <input
+                  type="text"
+                  value={newRouterName}
+                  onChange={(e) => setNewRouterName(e.target.value)}
+                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
+                  placeholder="jncis-sp-r1"
+                />
+                <p className="text-xs text-gray-500 mt-1">Tip: Use lab-name prefix (e.g. jncis-sp-r1) to group routers in labs</p>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">IP Address *</label>
+                <input
+                  type="text"
+                  value={newRouterIP}
+                  onChange={(e) => setNewRouterIP(e.target.value)}
+                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
+                  placeholder="10.10.50.13"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Router Type</label>
+                <select
+                  value={newRouterType}
+                  onChange={(e) => setNewRouterType(e.target.value)}
+                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
+                >
+                  <option value="vsrx">vSRX (Juniper)</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">RAM (GB)</label>
+                  <input
+                    type="number"
+                    value={newRouterRAM}
+                    onChange={(e) => setNewRouterRAM(parseInt(e.target.value))}
+                    className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
+                    min="2"
+                    max="32"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">vCPUs</label>
+                  <input
+                    type="number"
+                    value={newRouterCPUs}
+                    onChange={(e) => setNewRouterCPUs(parseInt(e.target.value))}
+                    className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
+                    min="1"
+                    max="16"
+                  />
+                </div>
+              </div>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3 text-sm text-yellow-300">
+                ⚠️ Router creation takes ~90 seconds. The router will boot automatically after creation.
+              </div>
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={createRouter}
+                  disabled={routerCreating}
+                  className="flex-1 bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {routerCreating ? 'Creating...' : 'Create Router'}
+                </button>
+                <button
+                  onClick={() => setShowNewRouterModal(false)}
+                  disabled={routerCreating}
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
