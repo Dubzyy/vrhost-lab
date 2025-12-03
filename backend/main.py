@@ -16,6 +16,7 @@ async def lifespan(app: FastAPI):
         app.state.libvirt_conn = libvirt.open('qemu:///system')
         app.state.router_service = RouterService(app.state.libvirt_conn)
         app.state.stats_service = StatsService(app.state.libvirt_conn)
+        app.state.lab_service = LabService()
         print("✓ Connected to libvirt")
     except Exception as e:
         print(f"✗ Failed to connect to libvirt: {e}")
@@ -225,3 +226,81 @@ async def delete_topology(name: str):
         return result
     else:
         raise HTTPException(status_code=404, detail=result["message"])
+
+# Lab Management
+from backend.models.lab import LabCreate, LabInfo
+from backend.services.lab_service import LabService
+
+# Initialize lab service in lifespan (add this line after router_service initialization)
+# Add: app.state.lab_service = LabService()
+
+@app.get("/api/labs", response_model=List[dict])
+async def list_labs():
+    """List all labs"""
+    return app.state.lab_service.list_labs(app.state.router_service)
+
+@app.post("/api/labs")
+async def create_lab(lab: LabCreate):
+    """Create a new lab"""
+    result = app.state.lab_service.create_lab(lab.name, lab.description)
+    if result["success"]:
+        return result
+    else:
+        raise HTTPException(status_code=500, detail=result["message"])
+
+@app.get("/api/labs/{name}")
+async def get_lab(name: str):
+    """Get lab details"""
+    result = app.state.lab_service.get_lab(name)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+@app.delete("/api/labs/{name}")
+async def delete_lab(name: str):
+    """Delete a lab"""
+    result = app.state.lab_service.delete_lab(name)
+    if result["success"]:
+        return result
+    else:
+        raise HTTPException(status_code=404, detail=result["message"])
+
+@app.get("/api/labs/{name}/routers")
+async def get_lab_routers(name: str):
+    """Get all routers in a lab"""
+    routers = app.state.lab_service.get_lab_routers(name, app.state.router_service)
+    return {"lab": name, "routers": routers, "count": len(routers)}
+
+@app.post("/api/labs/{name}/start")
+async def start_lab(name: str):
+    """Start all routers in a lab"""
+    routers = app.state.lab_service.get_lab_routers(name, app.state.router_service)
+    started = []
+    failed = []
+    
+    for router in routers:
+        if router['state'] != 'running':
+            result = app.state.router_service.start_router(router['name'])
+            if result['success']:
+                started.append(router['name'])
+            else:
+                failed.append({"name": router['name'], "error": result['message']})
+    
+    return {"success": True, "started": started, "failed": failed}
+
+@app.post("/api/labs/{name}/stop")
+async def stop_lab(name: str, force: bool = False):
+    """Stop all routers in a lab"""
+    routers = app.state.lab_service.get_lab_routers(name, app.state.router_service)
+    stopped = []
+    failed = []
+    
+    for router in routers:
+        if router['state'] == 'running':
+            result = app.state.router_service.stop_router(router['name'], force)
+            if result['success']:
+                stopped.append(router['name'])
+            else:
+                failed.append({"name": router['name'], "error": result['message']})
+    
+    return {"success": True, "stopped": stopped, "failed": failed}
