@@ -42,7 +42,7 @@ echo "✓ OS: $PRETTY_NAME"
 
 # Step 1: Install system dependencies
 echo ""
-echo "[1/7] Installing system dependencies..."
+echo "[1/8] Installing system dependencies..."
 apt update -qq
 apt install -y \
     libvirt-daemon-system \
@@ -62,7 +62,7 @@ echo "✓ System dependencies installed"
 
 # Step 2: Install Node.js 20
 echo ""
-echo "[2/7] Installing Node.js 20..."
+echo "[2/8] Installing Node.js 20..."
 if ! command -v node &> /dev/null || [ "$(node -v | cut -d'.' -f1 | sed 's/v//')" -lt 20 ]; then
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
     apt install -y nodejs > /dev/null 2>&1
@@ -71,7 +71,7 @@ echo "✓ Node.js $(node -v) installed"
 
 # Step 3: Setup Python backend
 echo ""
-echo "[3/7] Setting up Python backend..."
+echo "[3/8] Setting up Python backend..."
 cd "$INSTALL_DIR"
 if [ ! -d "venv" ]; then
     python3 -m venv venv
@@ -88,18 +88,29 @@ pip install --quiet \
 
 echo "✓ Backend dependencies installed"
 
-# Step 4: Setup React frontend
+# Step 4: Install mkjuniper script
 echo ""
-echo "[4/7] Setting up React frontend..."
+echo "[4/8] Installing mkjuniper script..."
+if [ -f "$INSTALL_DIR/scripts/mkjuniper" ]; then
+    cp "$INSTALL_DIR/scripts/mkjuniper" /usr/local/bin/mkjuniper
+    chmod +x /usr/local/bin/mkjuniper
+    echo "✓ mkjuniper installed"
+else
+    echo "⚠ mkjuniper script not found - you'll need to add it manually"
+fi
+
+# Step 5: Setup React frontend
+echo ""
+echo "[5/8] Setting up React frontend..."
 cd "$INSTALL_DIR/frontend"
 if [ ! -d "node_modules" ]; then
     npm install --silent > /dev/null 2>&1
 fi
 echo "✓ Frontend dependencies installed"
 
-# Step 5: Create systemd services
+# Step 6: Create systemd services
 echo ""
-echo "[5/7] Creating systemd services..."
+echo "[6/8] Creating systemd services..."
 
 # Backend service
 cat > /etc/systemd/system/vrhost-api.service <<APISERVICE
@@ -143,17 +154,17 @@ WEBSERVICE
 systemctl daemon-reload
 echo "✓ Systemd services created"
 
-# Step 6: Build frontend for production
+# Step 7: Build frontend for production
 echo ""
-echo "[6/7] Building frontend for production..."
+echo "[7/8] Building frontend for production..."
 cd "$INSTALL_DIR/frontend"
 npm run build --silent > /dev/null 2>&1
 npm install -g serve --silent > /dev/null 2>&1
 echo "✓ Frontend built"
 
-# Step 7: Start services
+# Step 8: Start services
 echo ""
-echo "[7/7] Starting services..."
+echo "[8/8] Starting services..."
 systemctl enable vrhost-api > /dev/null 2>&1
 systemctl enable vrhost-web > /dev/null 2>&1
 systemctl start vrhost-api

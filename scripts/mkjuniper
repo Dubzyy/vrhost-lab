@@ -1,0 +1,134 @@
+#!/bin/bash
+
+# mkjuniper - Deploy Juniper vRR or vSRX routers
+# Usage: 
+#   mkjuniper <name> <ip> [type] [ram_gb] [vcpus]
+#   mkjuniper list
+#   mkjuniper delete <name>
+# Types: vrr, vsrx (default)
+
+VRR_BASE="/var/lib/libvirt/images/vrr-20.2R1.10.qcow2"
+VSRX_BASE="/var/lib/libvirt/images/vsrx-23.2R2.21.qcow2"
+IP_MAP="/var/lib/libvirt/juniper-ips.txt"
+
+touch ${IP_MAP}
+
+list_routers() {
+    echo "Juniper Routers:"
+    echo "========================================================"
+    printf "%-15s %-8s %-12s %-15s %s\n" "NAME" "TYPE" "STATE" "IP" "RESOURCES"
+    echo "--------------------------------------------------------"
+    
+    virsh list --all | tail -n +3 | while read id name state rest; do
+        [ -z "$name" ] && continue
+        [[ "$name" == "containerlab" ]] && continue
+        
+        # Determine type from disk image
+        TYPE="vSRX"
+        if virsh domblklist ${name} 2>/dev/null | grep -q "vrr-"; then
+            TYPE="vRR"
+        fi
+        
+        IP=$(grep "^${name}:" ${IP_MAP} | cut -d: -f2)
+        [ -z "$IP" ] && IP="not configured"
+        
+        RAM=$(virsh dominfo ${name} 2>/dev/null | grep "Max memory" | awk '{print $3/1024 "MB"}')
+        VCPU=$(virsh dominfo ${name} 2>/dev/null | grep "CPU(s)" | awk '{print $2 "cpu"}')
+        
+        printf "%-15s %-8s %-12s %-15s %s/%s\n" "$name" "$TYPE" "$state" "$IP" "$RAM" "$VCPU"
+    done
+    
+    echo ""
+    echo "Disk usage:"
+    du -sh /var/lib/libvirt/images/*.qcow2 2>/dev/null | grep -vE "(vrr-20|vsrx-23)" | head -10
+}
+
+delete_router() {
+    NAME=$1
+    if [ -z "$NAME" ]; then
+        echo "Usage: mkjuniper delete <name>"
+        exit 1
+    fi
+    
+    echo "Deleting router ${NAME}..."
+    virsh destroy ${NAME} 2>/dev/null
+    virsh undefine ${NAME}
+    rm -f /var/lib/libvirt/images/${NAME}.qcow2
+    sed -i "/^${NAME}:/d" ${IP_MAP}
+    echo "Router ${NAME} deleted"
+}
+
+case "$1" in
+    list)
+        list_routers
+        exit 0
+        ;;
+    delete)
+        delete_router $2
+        exit 0
+        ;;
+    *)
+        if [ "$#" -lt 2 ]; then
+            echo "Usage: mkjuniper <name> <ip> [type] [ram_gb] [vcpus]"
+            echo "       mkjuniper list"
+            echo "       mkjuniper delete <name>"
+            echo ""
+            echo "Types: vsrx (default), vrr"
+            echo "Example: mkjuniper r1 10.10.50.10 vsrx 4 2"
+            exit 1
+        fi
+        ;;
+esac
+
+NAME=$1
+IP=$2
+TYPE=${3:-vsrx}
+RAM=${4:-4}
+VCPUS=${5:-2}
+
+echo "${NAME}:${IP}" >> ${IP_MAP}
+
+# Select base image
+if [ "$TYPE" == "vrr" ]; then
+    BASE_IMAGE=${VRR_BASE}
+else
+    BASE_IMAGE=${VSRX_BASE}
+fi
+
+echo "Creating ${TYPE} router ${NAME}..."
+qemu-img create -f qcow2 -F qcow2 -b ${BASE_IMAGE} /var/lib/libvirt/images/${NAME}.qcow2
+
+virt-install \
+  --name ${NAME} \
+  --memory $((RAM * 1024)) \
+  --vcpus ${VCPUS} \
+  --disk /var/lib/libvirt/images/${NAME}.qcow2,device=disk,bus=virtio \
+  --network bridge=br0,model=virtio \
+  --network bridge=br0,model=virtio \
+  --network bridge=br0,model=virtio \
+  --network bridge=br0,model=virtio \
+  --graphics none \
+  --console pty,target_type=serial \
+  --boot hd \
+  --osinfo detect=on,require=off \
+  --noautoconsole
+
+echo ""
+echo "${TYPE} ${NAME} created! (${RAM}GB RAM, ${VCPUS} vCPUs)"
+echo "Waiting 90 seconds for boot..."
+sleep 90
+
+echo ""
+echo "Connect: virsh console ${NAME}"
+echo "Login: root (no password)"
+echo "Configure management IP: ${IP}"
+echo ""
+echo "Quick config:"
+echo "  cli"
+echo "  configure"
+echo "  set system host-name ${NAME}"
+echo "  set interfaces fxp0 unit 0 family inet address ${IP}/24"
+echo "  set routing-options static route 0.0.0.0/0 next-hop 10.10.50.1"
+echo "  set system services ssh root-login allow"
+echo "  set system root-authentication plain-text-password"
+echo "  commit and-quit"

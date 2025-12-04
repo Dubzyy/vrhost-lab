@@ -1,16 +1,6 @@
 import axios from 'axios';
 
-// Dynamic API URL - uses localhost:8000 when tunneling, or detects from window location
-const getApiBaseUrl = () => {
-  // If accessing via localhost (SSH tunnel), use localhost:8000
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:8000';
-  }
-  // Otherwise use the same hostname with port 8000
-  return `${window.location.protocol}//${window.location.hostname}:8000`;
-};
-
-const API_BASE_URL = getApiBaseUrl();
+const API_BASE_URL = 'http://10.10.50.1:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -41,6 +31,8 @@ export const topologyAPI = {
   delete: (name) => api.delete(`/api/topologies/${name}`),
 };
 
+export default api;
+
 export const labAPI = {
   list: () => api.get('/api/labs'),
   create: (data) => api.post('/api/labs', data),
@@ -50,5 +42,3 @@ export const labAPI = {
   start: (name) => api.post(`/api/labs/${name}/start`),
   stop: (name) => api.post(`/api/labs/${name}/stop`),
 };
-
-export default api;
