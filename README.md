@@ -1,326 +1,313 @@
 # VRHost Lab
 
-**Lightweight network lab platform built by a NOC engineer for NOC engineers**
+A lightweight, web-based network lab platform for managing virtual routers. Built with FastAPI and React, designed for network engineers studying for certifications like JNCIS-SP.
 
-VRHost Lab is a modern, web-based network lab management platform that simplifies virtual router deployment and management. Built with Python FastAPI and React, it provides an intuitive interface for creating and managing network lab environments.
-
-## 🚀 Quick Install
-
-**One-command installation on Ubuntu 22.04+:**
-```bash
-git clone https://github.com/Dubzyy/vrhost-lab.git
-cd vrhost-lab
-sudo ./install.sh
-```
-
-**That's it!** Installation takes ~5 minutes and includes:
-- All dependencies (libvirt, Node.js, Python)
-- Backend API + Frontend UI
-- Systemd services (auto-start on boot)
-- Production build
-
-Then access at: `http://YOUR_SERVER_IP:3000`
-
-📖 **[Full Installation Guide](INSTALL.md)** | 🔧 **[Manual Installation](#manual-installation)**
-
----
+![VRHost Lab Dashboard](https://img.shields.io/badge/Status-Production%20Ready-success)
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![React](https://img.shields.io/badge/React-18.3-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ## ✨ Features
 
-### Lab Management (EVE-NG Style)
-- **Multi-Lab Support**: Create and manage multiple isolated lab environments
-- **Lab Controls**: Start/stop all routers in a lab with one click
-- **Lab Filtering**: View routers by lab or see all routers at once
-- **Lab Templates**: Save and load lab topologies
+- **🚀 One-Command Installation** - Complete setup in under 5 minutes
+- **🌐 Web-Based Management** - Clean, modern interface accessible from anywhere
+- **💻 Integrated Web Console** - Browser-based terminal access to routers using ttyd
+- **📊 Interactive Topology View** - Visual network diagrams with drag-and-drop positioning
+- **🔄 Real-Time Monitoring** - Live router states and system resource tracking
+- **🏗️ Multi-Lab Support** - Organize routers into isolated lab environments
+- **⚡ Quick Actions** - Start/Stop/Restart routers with optimistic UI updates
+- **📱 Responsive Design** - Works on desktop, tablet, and mobile
+- **🔐 Remote Access Ready** - SSH tunnel + SOCKS proxy support for remote management
 
-### Router Management
-- **Create Routers**: Deploy vSRX routers via web UI or API
-- **Power Controls**: Start, stop, restart individual routers
-- **Bulk Operations**: Start/stop all routers simultaneously
-- **Real-time Status**: Live router state monitoring with auto-refresh
+## 🎯 Key Features
 
-### System Monitoring
-- **Resource Tracking**: Monitor memory, CPU, and disk usage
-- **Live Statistics**: Real-time router stats and system health
-- **Capacity Planning**: See available resources at a glance
+### Web Console Access
+Direct browser-based terminal access to router consoles. No need for separate SSH clients - click "Console" and you're in!
 
-### Modern Architecture
-- **REST API**: 26+ endpoints for complete programmatic control
-- **Real-time Updates**: Dashboard refreshes every 5 seconds
-- **Beautiful UI**: Dark theme with responsive design
-- **Fast**: Built on FastAPI for high performance
+- Token-based session management
+- Multiple concurrent console sessions
+- Secure ttyd integration
+- Works through SSH tunnels and SOCKS proxies
 
-## 📊 Screenshots
+### Interactive Topology Visualization
+Beautiful network topology view powered by Cytoscape.js:
 
-![VRHost Lab Dashboard](https://via.placeholder.com/800x450/111827/10b981?text=Dashboard+Screenshot)
+- Real-time state visualization (color-coded by status)
+- Drag-and-drop router positioning
+- Multiple layout algorithms (Circle, Grid)
+- Click nodes for detailed router information
+- Auto-refresh with live updates
 
-*Beautiful dark-themed interface with multi-lab support*
+### Lab Management
+Organize your network labs efficiently:
 
-## 🎯 Usage
+- Group routers by lab/project
+- Start/stop entire labs with one click
+- Track running vs total routers per lab
+- Filter routers by lab
+
+## 🛠️ Technology Stack
+
+**Backend:**
+- FastAPI (Python 3.11+)
+- libvirt for KVM/QEMU management
+- ttyd for web-based terminal access
+- uvicorn ASGI server
+
+**Frontend:**
+- React 18.3
+- Tailwind CSS
+- Cytoscape.js for topology visualization
+- Axios for API communication
+
+**Infrastructure:**
+- KVM/QEMU virtualization
+- systemd service management
+- Juniper vSRX routers
+
+## 📋 Prerequisites
+
+- Ubuntu 22.04 LTS or newer
+- Root/sudo access
+- KVM-enabled host (CPU virtualization support)
+- 8GB+ RAM recommended
+- 50GB+ free disk space
+- Juniper vSRX image (download separately)
+
+## 🚀 Quick Start
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/Dubzyy/vrhost-lab.git
+cd vrhost-lab
+```
+
+### 2. Run Installer
+```bash
+sudo bash install.sh
+```
+
+The installer will:
+- ✅ Install all dependencies (Node.js, Python, KVM, ttyd)
+- ✅ Create Python virtual environment
+- ✅ Build React frontend
+- ✅ Configure systemd services
+- ✅ Set up networking
+- ✅ Start the platform
+
+### 3. Access the Platform
+
+**Local Access:**
+```
+http://10.10.50.1:3000
+```
+
+**API Documentation:**
+```
+http://10.10.50.1:8000/docs
+```
+
+### 4. Create Your First Router
+
+See [Router Setup Guide](docs/ROUTER_SETUP.md) for detailed instructions on:
+- Downloading and configuring vSRX images
+- Using the `mkjuniper` script
+- Creating routers through the web interface
+
+## 🌐 Remote Access
+
+### SSH Tunnel (Recommended)
+```bash
+ssh -L 3000:100.77.52.108:3000 -L 8000:100.77.52.108:8000 your-jump-host
+```
+
+### SSH Tunnel + SOCKS Proxy (For Console Access)
+```bash
+ssh -D 8080 -L 3000:100.77.52.108:3000 -L 8000:100.77.52.108:8000 your-jump-host
+```
+
+Then configure your browser to use SOCKS proxy `localhost:8080`.
+
+## 📖 Usage
 
 ### Creating a Lab
 
-1. Click **"+ New Lab"** in the dashboard
-2. Enter lab name (e.g., `jncis-sp`)
-3. Add description (optional)
+1. Click **"+ New Lab"**
+2. Enter lab name (e.g., `jncis-sp-lab`)
+3. Add description
 4. Click **"Create Lab"**
 
-### Adding Routers to a Lab
+### Creating a Router
 
-Routers are associated with labs via naming convention:
-- Lab name: `jncis-sp`
-- Router names: `jncis-sp-r1`, `jncis-sp-r2`, `jncis-sp-r3`
+1. Click **"+ New Router"**
+2. Fill in details:
+   - Name: `jncis-sp-r1` (tip: use lab prefix for grouping)
+   - IP Address: `10.10.50.13`
+   - RAM: 4GB (minimum for vSRX)
+   - vCPUs: 2
+3. Click **"Create Router"**
+4. Wait ~90 seconds for boot
 
-**Via Web UI:**
-Click "+ New Router" button (coming soon)
+### Using Web Console
 
-**Via API:**
-```bash
-curl -X POST http://localhost:8000/api/routers \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "jncis-sp-r1",
-    "ip": "10.10.50.10",
-    "router_type": "vsrx",
-    "ram_gb": 4,
-    "vcpus": 2
-  }'
+1. Ensure router is **running** (green status)
+2. Click **"Console"** button
+3. New window opens with terminal
+4. Login: `root` (no password initially)
+
+### Viewing Topology
+
+1. Click **"🌐 Topology View"** tab
+2. Drag routers to reposition
+3. Click router nodes for details
+4. Use layout buttons:
+   - **Circle Layout** - Arrange in circle
+   - **Grid Layout** - Arrange in grid
+   - **Fit View** - Center and zoom to fit
+
+## 🏗️ Architecture
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Web Browser                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │  Dashboard   │  │   Topology   │  │   Console    │  │
+│  │   (React)    │  │ (Cytoscape)  │  │    (ttyd)    │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
+└─────────┼──────────────────┼──────────────────┼─────────┘
+          │                  │                  │
+          ├──────────────────┴──────────────────┘
+          │         HTTP/WebSocket
+          ▼
+┌─────────────────────────────────────────────────────────┐
+│              FastAPI Backend (Port 8000)                 │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │  RouterService  │  LabService  │  ConsoleService │   │
+│  └──────────┬────────────┬────────────┬─────────────┘   │
+└─────────────┼─────────────┼────────────┼─────────────────┘
+              │             │            │
+              ▼             ▼            ▼
+┌─────────────────────────────────────────────────────────┐
+│                    libvirt / KVM                         │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
+│  │  vSRX-1  │  │  vSRX-2  │  │  vSRX-3  │              │
+│  └──────────┘  └──────────┘  └──────────┘              │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Managing Labs
-
-**Start all routers in a lab:**
-```bash
-curl -X POST http://localhost:8000/api/labs/jncis-sp/start
-```
-
-**Stop all routers in a lab:**
-```bash
-curl -X POST http://localhost:8000/api/labs/jncis-sp/stop
-```
-
-## 🔌 API Endpoints
-
-### Router Management
-- `GET /api/routers` - List all routers
-- `POST /api/routers` - Create new router
-- `GET /api/routers/{name}` - Get router details
-- `DELETE /api/routers/{name}` - Delete router
-- `POST /api/routers/{name}/start` - Start router
-- `POST /api/routers/{name}/stop` - Stop router
-- `POST /api/routers/{name}/restart` - Restart router
-
-### Lab Management
-- `GET /api/labs` - List all labs
-- `POST /api/labs` - Create new lab
-- `GET /api/labs/{name}` - Get lab details
-- `DELETE /api/labs/{name}` - Delete lab
-- `GET /api/labs/{name}/routers` - Get lab routers
-- `POST /api/labs/{name}/start` - Start all routers in lab
-- `POST /api/labs/{name}/stop` - Stop all routers in lab
-
-### System Stats
-- `GET /api/stats/system` - Get system statistics
-- `GET /api/stats/routers/{name}` - Get router statistics
-
-### Topology Management
-- `GET /api/topologies` - List saved topologies
-- `POST /api/topologies` - Save topology
-- `GET /api/topologies/{name}` - Load topology
-- `DELETE /api/topologies/{name}` - Delete topology
-
-Full API documentation: `http://localhost:8000/docs`
-
-## 🛠️ Management
-
-### Service Commands
-```bash
-# Check status
-systemctl status vrhost-api
-systemctl status vrhost-web
-
-# Restart services
-systemctl restart vrhost-api
-systemctl restart vrhost-web
-
-# View logs
-journalctl -u vrhost-api -f
-journalctl -u vrhost-web -f
-```
-
-### Update VRHost Lab
-```bash
-cd /opt/vrhost-lab
-sudo ./update.sh
-```
-
-### Uninstall
-```bash
-cd /opt/vrhost-lab
-sudo ./uninstall.sh
-```
-
-## 📚 Architecture
+## 📂 Project Structure
 ```
 vrhost-lab/
 ├── backend/
-│   ├── main.py              # FastAPI application
-│   ├── models/              # Pydantic models
+│   ├── main.py                    # FastAPI application
+│   ├── models/                    # Pydantic models
 │   │   ├── router.py
-│   │   ├── topology.py
-│   │   └── lab.py
-│   └── services/            # Business logic
+│   │   ├── lab.py
+│   │   └── topology.py
+│   └── services/                  # Business logic
 │       ├── router_service.py
+│       ├── lab_service.py
 │       ├── stats_service.py
-│       ├── topology_service.py
-│       └── lab_service.py
+│       └── console_service.py     # Web console management
 ├── frontend/
 │   ├── src/
-│   │   ├── App.js           # Main React component
+│   │   ├── App.js                 # Main React component
+│   │   ├── Topology.js            # Topology visualization
 │   │   └── services/
-│   │       └── api.js       # API client
+│   │       └── api.js             # API client
+│   ├── public/
 │   └── package.json
-├── labs/                    # Lab definitions
-├── topologies/              # Saved topologies
-├── install.sh               # Automated installer
-├── update.sh                # Update script
-└── uninstall.sh             # Uninstaller
+├── scripts/
+│   ├── mkjuniper                  # Router creation script
+│   └── mkvm                       # Generic VM creation
+├── docs/
+│   └── ROUTER_SETUP.md            # Router setup guide
+└── install.sh                     # One-command installer
 ```
 
-## 🔧 Tech Stack
+## 🔧 Manual Installation (Advanced)
 
-**Backend:**
-- Python 3.10
-- FastAPI
-- libvirt-python
-- Pydantic
-- Uvicorn
-
-**Frontend:**
-- React 19
-- Tailwind CSS 3
-- Axios
-- React Router
-
-**Infrastructure:**
-- KVM/QEMU
-- libvirt
-- vSRX (Juniper)
-
-## 💻 Manual Installation
-
-<details>
-<summary>Click to expand manual installation steps</summary>
-
-### Prerequisites
-- Ubuntu 22.04+ (or similar Linux)
-- KVM/QEMU with libvirt
-- Python 3.10+
-- Node.js 20+
+If you prefer manual setup or need to customize:
 
 ### Backend Setup
 ```bash
-# Clone repository
-git clone https://github.com/Dubzyy/vrhost-lab.git
-cd vrhost-lab
-
-# Install system dependencies
-sudo apt install -y libvirt-daemon-system libvirt-clients qemu-kvm \
-    python3 python3-pip python3-venv python3-dev libvirt-dev pkg-config gcc
-
-# Create virtual environment
+cd backend
 python3 -m venv venv
 source venv/bin/activate
-
-# Install Python packages
-pip install fastapi uvicorn[standard] libvirt-python pydantic websockets python-multipart
-
-# Start API server
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+pip install -r requirements.txt
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Frontend Setup
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
-npm start
+npm start  # Development
+npm run build  # Production
 ```
 
-For production deployment, see [INSTALL.md](INSTALL.md)
-</details>
+### Install ttyd
+```bash
+sudo apt update
+sudo apt install -y ttyd
+```
 
-## 🗺️ Roadmap
+## 🐛 Troubleshooting
 
-- [ ] Visual topology builder with drag-and-drop
-- [ ] Router creation via web UI (modal form)
-- [ ] Web-based console access (noVNC/xterm.js)
-- [ ] Multi-host support (manage multiple servers)
-- [ ] Network configuration templates
-- [ ] Automated lab provisioning from templates
-- [ ] RBAC (Role-Based Access Control)
-- [ ] Lab sharing and import/export
-- [ ] Support for additional platforms (Cisco, Arista, etc.)
-- [ ] Performance metrics and graphs
-- [ ] Scheduled lab start/stop
+### Routers Won't Start
+```bash
+# Check libvirt connection
+virsh list --all
+
+# Check router status
+virsh dominfo router-name
+
+# View logs
+sudo journalctl -u vrhost-api -n 50
+```
+
+### Console Won't Open
+```bash
+# Check ttyd is installed
+ttyd --version
+
+# Check console sessions
+ps aux | grep ttyd
+
+# Check API logs
+sudo journalctl -u vrhost-api | grep console
+```
+
+### Frontend Not Loading
+```bash
+# Check web service
+sudo systemctl status vrhost-web
+
+# Rebuild frontend
+cd /opt/vrhost-lab/frontend
+npm run build
+sudo systemctl restart vrhost-web
+```
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👤 Author
-
-**Hunter Wilson**
-- GitHub: [@Dubzyy](https://github.com/Dubzyy)
-- Email: admin@vrhost.org
-- Website: [vrhost.org](https://vrhost.org)
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
-- Built for the networking community
 - Inspired by EVE-NG and GNS3
-- Designed for simplicity and speed
-- Thanks to all contributors and users
+- Built for network engineers studying for Juniper certifications
+- Special thanks to the FastAPI, React, and Cytoscape.js communities
 
-## 📊 Project Stats
+## 📧 Contact
 
-- **26+ API endpoints**
-- **7 commits** (and growing!)
-- **Full-stack application**
-- **Production-ready**
-- **Open source MIT**
-- **Active development**
+Hunter Wilson - [@Dubzyy](https://github.com/Dubzyy)
 
-## ⭐ Star History
-
-If you find VRHost Lab useful, please consider giving it a star on GitHub!
+Project Link: [https://github.com/Dubzyy/vrhost-lab](https://github.com/Dubzyy/vrhost-lab)
 
 ---
 
-**Built with ❤️ by a NOC engineer who wanted better lab tooling**
-
-**[Get Started →](INSTALL.md)** | **[API Docs →](http://localhost:8000/docs)** | **[Report Issues →](https://github.com/Dubzyy/vrhost-lab/issues)**
-
-## 📦 Router Image Setup
-
-Before using VRHost Lab, you need to provide a vSRX router image.
-
-**See [Router Setup Guide](docs/ROUTER_SETUP.md) for:**
-- Where to download vSRX image
-- How to install it
-- mkjuniper script usage
-- Requirements and troubleshooting
-
+**⭐ Star this repo if you find it useful!**
