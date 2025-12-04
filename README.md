@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![VRHost Lab Logo](docs/images/logo.png)
-
 **A Modern, Web-Based Network Lab Platform for Network Engineers**
 
 Built for certification studies, network automation, and hands-on learning
@@ -140,22 +138,6 @@ Built with remote access in mind.
 
 ---
 
-## 🎬 Screenshots
-
-### Dashboard View
-![Dashboard](docs/images/dashboard.png)
-*Clean, modern interface showing all routers and labs*
-
-### Interactive Topology
-![Topology](docs/images/topology.png)
-*Real-time network topology with drag-and-drop positioning*
-
-### Web Console
-![Console](docs/images/console.png)
-*Browser-based terminal access to router CLI*
-
----
-
 ## 📋 Requirements
 
 ### System Requirements
@@ -220,17 +202,18 @@ sudo mkjuniper r1
 # Click "Console" button to access router CLI
 ```
 
-📚 **Detailed guide**: See [Installation Guide](docs/INSTALLATION.md)
-
 ---
 
 ## 📖 Documentation
 
-- 📘 [**Installation Guide**](docs/INSTALLATION.md) - Step-by-step setup with screenshots
 - 📗 [**Router Setup Guide**](docs/ROUTER_SETUP.md) - Creating and configuring routers
-- 📙 [**API Documentation**](http://localhost:8000/docs) - Interactive API reference
-- 📕 [**Architecture Guide**](docs/ARCHITECTURE.md) - System design and components
-- 📔 [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- 📙 [**API Documentation**](http://localhost:8000/docs) - Interactive API reference (when running)
+- 📕 [**GitHub Wiki**](https://github.com/Dubzyy/vrhost-lab/wiki) - Additional guides and tips
+
+**Coming Soon:**
+- 📘 Installation Guide (detailed step-by-step)
+- 📔 Troubleshooting Guide
+- 📓 Architecture Documentation
 
 ---
 
@@ -332,10 +315,7 @@ vrhost-lab/
 │   └── mkvm                   # Generic VM creation
 │
 ├── docs/                       # Documentation
-│   ├── INSTALLATION.md        # Installation guide
-│   ├── ROUTER_SETUP.md        # Router setup
-│   ├── ARCHITECTURE.md        # Architecture docs
-│   └── images/                # Screenshots
+│   └── ROUTER_SETUP.md        # Router setup guide
 │
 ├── install.sh                 # One-command installer
 ├── README.md                  # This file
@@ -452,7 +432,7 @@ npm run build
 sudo systemctl restart vrhost-web
 ```
 
-📖 **Full troubleshooting guide**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+**For more help**, open an issue on [GitHub Issues](https://github.com/Dubzyy/vrhost-lab/issues).
 
 ---
 
@@ -465,7 +445,12 @@ Contributions are welcome! Whether it's:
 - 📝 Documentation improvements
 - 🔧 Code contributions
 
-**Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.**
+**How to contribute:**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ### Development Setup
 ```bash
@@ -508,8 +493,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Author**: Hunter Wilson
 
 - 🐙 GitHub: [@Dubzyy](https://github.com/Dubzyy)
-- 💼 LinkedIn: [Hunter Wilson](https://linkedin.com/in/hunter-wilson)
-- 🌐 Portfolio: [portfolio.vrhost.org](http://portfolio.vrhost.org)
+- 💼 LinkedIn: [Hunter Wilson](https://linkedin.com/in/hunter-wilsonit)
+- 🌐 Portfolio: [https://portfolio.vrhost.org](https://portfolio.vrhost.org)
 
 **Project Links**:
 - 🔗 Repository: [https://github.com/Dubzyy/vrhost-lab](https://github.com/Dubzyy/vrhost-lab)
@@ -528,6 +513,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [![GitHub forks](https://img.shields.io/github/forks/Dubzyy/vrhost-lab?style=social)](https://github.com/Dubzyy/vrhost-lab/fork)
 [![GitHub watchers](https://img.shields.io/github/watchers/Dubzyy/vrhost-lab?style=social)](https://github.com/Dubzyy/vrhost-lab)
 
-[🚀 Get Started](docs/INSTALLATION.md) • [📖 Documentation](#-documentation) • [🐛 Report Bug](https://github.com/Dubzyy/vrhost-lab/issues) • [💡 Request Feature](https://github.com/Dubzyy/vrhost-lab/issues)
+[🚀 Get Started](#-quick-start) • [📖 Documentation](#-documentation) • [🐛 Report Bug](https://github.com/Dubzyy/vrhost-lab/issues) • [💡 Request Feature](https://github.com/Dubzyy/vrhost-lab/issues)
 
 </div>
