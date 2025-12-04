@@ -313,3 +313,14 @@ If you find VRHost Lab useful, please consider giving it a star on GitHub!
 **Built with ❤️ by a NOC engineer who wanted better lab tooling**
 
 **[Get Started →](INSTALL.md)** | **[API Docs →](http://localhost:8000/docs)** | **[Report Issues →](https://github.com/Dubzyy/vrhost-lab/issues)**
+
+## 📦 Router Image Setup
+
+Before using VRHost Lab, you need to provide a vSRX router image.
+
+**See [Router Setup Guide](docs/ROUTER_SETUP.md) for:**
+- Where to download vSRX image
+- How to install it
+- mkjuniper script usage
+- Requirements and troubleshooting
+
