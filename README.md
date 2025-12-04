@@ -1,285 +1,449 @@
-# VRHost Lab
+# VRHost Lab 🚀
 
-A lightweight, web-based network lab platform for managing virtual routers. Built with FastAPI and React, designed for network engineers studying for certifications like JNCIS-SP.
+<div align="center">
 
-![VRHost Lab Dashboard](https://img.shields.io/badge/Status-Production%20Ready-success)
-![Python](https://img.shields.io/badge/Python-3.11+-blue)
-![React](https://img.shields.io/badge/React-18.3-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+![VRHost Lab Logo](docs/images/logo.png)
+
+**A Modern, Web-Based Network Lab Platform for Network Engineers**
+
+Built for certification studies, network automation, and hands-on learning
+
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](https://github.com/Dubzyy/vrhost-lab)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-18.3-61dafb)](https://reactjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Dubzyy/vrhost-lab?style=social)](https://github.com/Dubzyy/vrhost-lab)
+
+[**🎯 Features**](#-features) • [**🚀 Quick Start**](#-quick-start) • [**📖 Documentation**](#-documentation) • [**🗺️ Roadmap**](#️-roadmap)
+
+</div>
+
+---
+
+## 📖 Overview
+
+VRHost Lab is a lightweight, web-based platform for managing virtual network labs. It provides an intuitive interface for creating, managing, and accessing network routers through your browser - perfect for studying for certifications like JNCIS-SP, CCNA, or building complex network topologies for testing.
+
+**Think EVE-NG/GNS3, but modern, lightweight, and built from the ground up for ease of use.**
+
+### 🎯 Why VRHost Lab?
+
+- ✅ **One-command installation** - Up and running in under 5 minutes
+- ✅ **Browser-based console** - No SSH client needed, access routers directly in your browser
+- ✅ **Interactive topology view** - Visual network diagrams that update in real-time
+- ✅ **Modern tech stack** - FastAPI backend + React frontend = fast and responsive
+- ✅ **Multi-vendor ready** - Juniper support now, Cisco IOSv coming soon
+- ✅ **Open source** - Free to use, modify, and contribute
+
+---
 
 ## ✨ Features
 
-- **🚀 One-Command Installation** - Complete setup in under 5 minutes
-- **🌐 Web-Based Management** - Clean, modern interface accessible from anywhere
-- **💻 Integrated Web Console** - Browser-based terminal access to routers using ttyd
-- **📊 Interactive Topology View** - Visual network diagrams with drag-and-drop positioning
-- **🔄 Real-Time Monitoring** - Live router states and system resource tracking
-- **🏗️ Multi-Lab Support** - Organize routers into isolated lab environments
-- **⚡ Quick Actions** - Start/Stop/Restart routers with optimistic UI updates
-- **📱 Responsive Design** - Works on desktop, tablet, and mobile
-- **🔐 Remote Access Ready** - SSH tunnel + SOCKS proxy support for remote management
+### 🖥️ **Web-Based Console Access**
+Click "Console" and you're in - no SSH client required. Powered by ttyd for secure, token-based terminal sessions.
 
-## 🎯 Key Features
-
-### Web Console Access
-Direct browser-based terminal access to router consoles. No need for separate SSH clients - click "Console" and you're in!
-
-- Token-based session management
 - Multiple concurrent console sessions
-- Secure ttyd integration
 - Works through SSH tunnels and SOCKS proxies
+- Session timeout and automatic cleanup
+- Perfect for remote lab access
 
-### Interactive Topology Visualization
-Beautiful network topology view powered by Cytoscape.js:
+### 🌐 **Interactive Network Topology**
+Beautiful, real-time topology visualization powered by Cytoscape.js.
 
-- Real-time state visualization (color-coded by status)
-- Drag-and-drop router positioning
-- Multiple layout algorithms (Circle, Grid)
-- Click nodes for detailed router information
-- Auto-refresh with live updates
+- **Color-coded status** - Green (running), Blue (starting), Yellow (stopping), Gray (stopped)
+- **Drag-and-drop positioning** - Arrange your topology exactly how you want
+- **Multiple layouts** - Circle, Grid, or custom arrangements
+- **Live updates** - Status changes reflected immediately
+- **Click for details** - Select nodes to see router info
 
-### Lab Management
-Organize your network labs efficiently:
+### 🏗️ **Multi-Lab Management**
+Organize routers into isolated lab environments.
 
-- Group routers by lab/project
+- Create separate labs for different projects or study topics
 - Start/stop entire labs with one click
-- Track running vs total routers per lab
-- Filter routers by lab
+- Track resource usage per lab
+- Filter and search across labs
+
+### ⚡ **Quick Actions**
+Manage routers efficiently with optimistic UI updates.
+
+- **Start/Stop/Restart** - Control router lifecycle
+- **Delete with confirmation** - Prevent accidental deletions
+- **Bulk operations** - Manage multiple routers at once
+- **Real-time status** - See changes immediately
+
+### 📊 **Real-Time Monitoring**
+Track system resources and router states.
+
+- CPU and memory usage per router
+- Running vs total routers
+- Lab statistics
+- System health monitoring
+
+### 🔐 **Remote Access Ready**
+Built with remote access in mind.
+
+- SSH tunnel support
+- SOCKS proxy compatibility
+- Tailscale integration
+- Secure by default
+
+---
 
 ## 🛠️ Technology Stack
 
-**Backend:**
-- FastAPI (Python 3.11+)
-- libvirt for KVM/QEMU management
-- ttyd for web-based terminal access
-- uvicorn ASGI server
+<table>
+<tr>
+<td width="50%">
 
-**Frontend:**
-- React 18.3
-- Tailwind CSS
-- Cytoscape.js for topology visualization
-- Axios for API communication
+**Backend**
+- 🐍 Python 3.11+
+- ⚡ FastAPI (ASGI framework)
+- 🖥️ libvirt for KVM/QEMU
+- 💻 ttyd for web terminals
+- 🦄 uvicorn server
 
-**Infrastructure:**
-- KVM/QEMU virtualization
-- systemd service management
-- Juniper vSRX routers
+</td>
+<td width="50%">
 
-## 📋 Prerequisites
+**Frontend**
+- ⚛️ React 18.3
+- 🎨 Tailwind CSS
+- 📊 Cytoscape.js
+- 🔗 Axios HTTP client
+- 📱 Responsive design
 
-- Ubuntu 22.04 LTS or newer
-- Root/sudo access
-- KVM-enabled host (CPU virtualization support)
-- 8GB+ RAM recommended
-- 50GB+ free disk space
-- Juniper vSRX image (download separately)
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Infrastructure**
+- 🔧 KVM/QEMU virtualization
+- 🔄 systemd services
+- 🌉 Linux bridge networking
+- 🐧 Ubuntu 22.04+
+
+</td>
+<td width="50%">
+
+**Supported Platforms**
+- ✅ Juniper vSRX (production-ready)
+- 🔜 Cisco IOSv (coming soon)
+- 🔜 Cisco IOSvL2 (coming soon)
+- 🔜 More vendors planned
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🎬 Screenshots
+
+### Dashboard View
+![Dashboard](docs/images/dashboard.png)
+*Clean, modern interface showing all routers and labs*
+
+### Interactive Topology
+![Topology](docs/images/topology.png)
+*Real-time network topology with drag-and-drop positioning*
+
+### Web Console
+![Console](docs/images/console.png)
+*Browser-based terminal access to router CLI*
+
+---
+
+## 📋 Requirements
+
+### System Requirements
+
+| Component | Minimum | Recommended | Production |
+|-----------|---------|-------------|------------|
+| **CPU** | 4 cores | 8 cores | 16+ cores |
+| **RAM** | 16GB | 32GB | 64GB+ |
+| **Disk** | 100GB | 250GB | 500GB+ SSD |
+| **Routers** | 2-3 | 5-10 | 15+ |
+
+### Software Prerequisites
+
+- **OS**: Ubuntu 22.04 LTS or newer
+- **Access**: Root or sudo privileges
+- **Virtualization**: Intel VT-x or AMD-V (KVM support)
+- **Network**: Internet connection for dependencies
+- **Router Images**: Juniper vSRX (download separately)
+
+### Deployment Options
+
+- ✅ **Bare Metal** (recommended) - Best performance
+- ✅ **Virtual Machine** - Requires nested virtualization
+- ✅ **Cloud VM** - GCP, Azure with nested virt support
+
+---
 
 ## 🚀 Quick Start
 
-### 1. Clone Repository
+### Installation (5 minutes)
 ```bash
+# 1. Clone repository
 git clone https://github.com/Dubzyy/vrhost-lab.git
 cd vrhost-lab
-```
 
-### 2. Run Installer
-```bash
+# 2. Run installer
 sudo bash install.sh
+
+# 3. Access the platform
+# Local: http://localhost:3000
+# Remote: http://YOUR_SERVER_IP:3000
 ```
 
-The installer will:
-- ✅ Install all dependencies (Node.js, Python, KVM, ttyd)
-- ✅ Create Python virtual environment
-- ✅ Build React frontend
-- ✅ Configure systemd services
-- ✅ Set up networking
-- ✅ Start the platform
+### What the Installer Does
 
-### 3. Access the Platform
+- ✅ Installs Node.js, Python, KVM, QEMU, libvirt, ttyd
+- ✅ Creates Python virtual environment
+- ✅ Builds React frontend
+- ✅ Configures systemd services (vrhost-api, vrhost-web)
+- ✅ Sets up networking
+- ✅ Starts the platform automatically
 
-**Local Access:**
+### First Router
+```bash
+# 1. Download Juniper vSRX image (separately)
+# Place in: /var/lib/libvirt/images/juniper/
+
+# 2. Create router
+sudo mkjuniper r1
+
+# 3. Access via web interface
+# Click "Console" button to access router CLI
 ```
-http://10.10.50.1:3000
-```
 
-**API Documentation:**
-```
-http://10.10.50.1:8000/docs
-```
+📚 **Detailed guide**: See [Installation Guide](docs/INSTALLATION.md)
 
-### 4. Create Your First Router
+---
 
-See [Router Setup Guide](docs/ROUTER_SETUP.md) for detailed instructions on:
-- Downloading and configuring vSRX images
-- Using the `mkjuniper` script
-- Creating routers through the web interface
+## 📖 Documentation
+
+- 📘 [**Installation Guide**](docs/INSTALLATION.md) - Step-by-step setup with screenshots
+- 📗 [**Router Setup Guide**](docs/ROUTER_SETUP.md) - Creating and configuring routers
+- 📙 [**API Documentation**](http://localhost:8000/docs) - Interactive API reference
+- 📕 [**Architecture Guide**](docs/ARCHITECTURE.md) - System design and components
+- 📔 [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+---
 
 ## 🌐 Remote Access
 
-### SSH Tunnel (Recommended)
+### Method 1: SSH Tunnel (Simple)
 ```bash
-ssh -L 3000:100.77.52.108:3000 -L 8000:100.77.52.108:8000 your-jump-host
+ssh -L 3000:localhost:3000 -L 8000:localhost:8000 user@your-server
 ```
 
-### SSH Tunnel + SOCKS Proxy (For Console Access)
+Then access: `http://localhost:3000`
+
+### Method 2: SSH + SOCKS Proxy (For Console)
 ```bash
-ssh -D 8080 -L 3000:100.77.52.108:3000 -L 8000:100.77.52.108:8000 your-jump-host
+ssh -D 8080 -L 3000:localhost:3000 -L 8000:localhost:8000 user@your-server
 ```
 
-Then configure your browser to use SOCKS proxy `localhost:8080`.
+Configure browser SOCKS proxy: `localhost:8080`
 
-## 📖 Usage
+### Method 3: Tailscale (Recommended)
+```bash
+# On server
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
 
-### Creating a Lab
+# Access from anywhere
+http://100.x.x.x:3000
+```
 
-1. Click **"+ New Lab"**
-2. Enter lab name (e.g., `jncis-sp-lab`)
-3. Add description
-4. Click **"Create Lab"**
-
-### Creating a Router
-
-1. Click **"+ New Router"**
-2. Fill in details:
-   - Name: `jncis-sp-r1` (tip: use lab prefix for grouping)
-   - IP Address: `10.10.50.13`
-   - RAM: 4GB (minimum for vSRX)
-   - vCPUs: 2
-3. Click **"Create Router"**
-4. Wait ~90 seconds for boot
-
-### Using Web Console
-
-1. Ensure router is **running** (green status)
-2. Click **"Console"** button
-3. New window opens with terminal
-4. Login: `root` (no password initially)
-
-### Viewing Topology
-
-1. Click **"🌐 Topology View"** tab
-2. Drag routers to reposition
-3. Click router nodes for details
-4. Use layout buttons:
-   - **Circle Layout** - Arrange in circle
-   - **Grid Layout** - Arrange in grid
-   - **Fit View** - Center and zoom to fit
+---
 
 ## 🏗️ Architecture
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Web Browser                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │  Dashboard   │  │   Topology   │  │   Console    │  │
-│  │   (React)    │  │ (Cytoscape)  │  │    (ttyd)    │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
-└─────────┼──────────────────┼──────────────────┼─────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      Web Browser                             │
+│                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │  Dashboard   │  │   Topology   │  │   Console    │      │
+│  │   (React)    │  │ (Cytoscape)  │  │    (ttyd)    │      │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
+└─────────┼──────────────────┼──────────────────┼─────────────┘
           │                  │                  │
-          ├──────────────────┴──────────────────┘
-          │         HTTP/WebSocket
-          ▼
-┌─────────────────────────────────────────────────────────┐
-│              FastAPI Backend (Port 8000)                 │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  RouterService  │  LabService  │  ConsoleService │   │
-│  └──────────┬────────────┬────────────┬─────────────┘   │
-└─────────────┼─────────────┼────────────┼─────────────────┘
-              │             │            │
-              ▼             ▼            ▼
-┌─────────────────────────────────────────────────────────┐
-│                    libvirt / KVM                         │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
-│  │  vSRX-1  │  │  vSRX-2  │  │  vSRX-3  │              │
-│  └──────────┘  └──────────┘  └──────────┘              │
-└─────────────────────────────────────────────────────────┘
+          │         HTTP/REST API + WebSocket   │
+          ▼                  ▼                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│              FastAPI Backend (Port 8000)                     │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  RouterService  │  LabService  │  ConsoleService    │    │
+│  │  StatsService   │  TopologyService                  │    │
+│  └──────────┬───────────────┬──────────────┬───────────┘    │
+└─────────────┼────────────────┼──────────────┼────────────────┘
+              │                │              │
+              ▼                ▼              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    libvirt / KVM Layer                       │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Virtual Network (br0 bridge)                        │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                               │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
+│  │  vSRX-1  │  │  vSRX-2  │  │  vSRX-3  │  │  vSRX-4  │    │
+│  │ (4GB/2C) │  │ (4GB/2C) │  │ (4GB/2C) │  │ (4GB/2C) │    │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## 📂 Project Structure
+---
+
+## 📁 Project Structure
 ```
 vrhost-lab/
-├── backend/
-│   ├── main.py                    # FastAPI application
-│   ├── models/                    # Pydantic models
+├── backend/                    # FastAPI backend
+│   ├── main.py                # Main application entry
+│   ├── models/                # Pydantic data models
 │   │   ├── router.py
 │   │   ├── lab.py
 │   │   └── topology.py
-│   └── services/                  # Business logic
-│       ├── router_service.py
-│       ├── lab_service.py
-│       ├── stats_service.py
-│       └── console_service.py     # Web console management
-├── frontend/
+│   └── services/              # Business logic
+│       ├── router_service.py  # Router management
+│       ├── lab_service.py     # Lab management
+│       ├── stats_service.py   # Statistics
+│       └── console_service.py # Web console (ttyd)
+│
+├── frontend/                   # React frontend
 │   ├── src/
-│   │   ├── App.js                 # Main React component
-│   │   ├── Topology.js            # Topology visualization
+│   │   ├── App.js            # Main component
+│   │   ├── Topology.js       # Cytoscape topology
 │   │   └── services/
-│   │       └── api.js             # API client
+│   │       └── api.js        # API client
 │   ├── public/
 │   └── package.json
-├── scripts/
-│   ├── mkjuniper                  # Router creation script
-│   └── mkvm                       # Generic VM creation
-├── docs/
-│   └── ROUTER_SETUP.md            # Router setup guide
-└── install.sh                     # One-command installer
+│
+├── scripts/                    # Helper scripts
+│   ├── mkjuniper              # Create Juniper router
+│   ├── mkcisco-router         # Create Cisco router (WIP)
+│   ├── mkcisco-switch         # Create Cisco switch (WIP)
+│   └── mkvm                   # Generic VM creation
+│
+├── docs/                       # Documentation
+│   ├── INSTALLATION.md        # Installation guide
+│   ├── ROUTER_SETUP.md        # Router setup
+│   ├── ARCHITECTURE.md        # Architecture docs
+│   └── images/                # Screenshots
+│
+├── install.sh                 # One-command installer
+├── README.md                  # This file
+└── LICENSE                    # MIT License
 ```
 
-## 🔧 Manual Installation (Advanced)
+---
 
-If you prefer manual setup or need to customize:
+## 🗺️ Roadmap
 
-### Backend Setup
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn backend.main:app --host 0.0.0.0 --port 8000
-```
+### ✅ Phase 1: Core Platform (Complete)
+- ✅ FastAPI backend with REST API
+- ✅ React frontend with Tailwind CSS
+- ✅ Juniper vSRX support
+- ✅ Web console access (ttyd)
+- ✅ Interactive topology view
+- ✅ Multi-lab management
+- ✅ One-command installer
+- ✅ systemd service integration
 
-### Frontend Setup
-```bash
-cd frontend
-npm install
-npm start  # Development
-npm run build  # Production
-```
+### 🚧 Phase 2: Multi-Vendor Support (In Progress)
+- ✅ Cisco IOSv router scripts created
+- ✅ Cisco IOSvL2 switch scripts created
+- 🔜 Cisco image integration testing
+- 🔜 Backend API multi-vendor support
+- 🔜 Frontend vendor badges/icons
+- 🔜 Topology color-coding by vendor
 
-### Install ttyd
-```bash
-sudo apt update
-sudo apt install -y ttyd
-```
+### 🔮 Phase 3: Advanced Features (Planned)
+- 🔜 Router snapshots and cloning
+- 🔜 Configuration backup/restore
+- 🔜 Lab templates (save/load topologies)
+- 🔜 Network diagram export (PNG/SVG)
+- 🔜 Automated lab provisioning
+- 🔜 YAML-based lab definitions
+
+### 🚀 Phase 4: Platform Enhancement (Future)
+- 🔜 User authentication
+- 🔜 Multi-user support
+- 🔜 Role-based access control
+- 🔜 Centralized logging (Graylog)
+- 🔜 Metrics dashboard (Prometheus/Grafana)
+- 🔜 API rate limiting
+- 🔜 WebSocket for real-time updates
+
+### 🌟 Phase 5: Additional Platforms (Future)
+- 🔜 Arista vEOS support
+- 🔜 Mikrotik CHR support
+- 🔜 Nokia VSR support
+- 🔜 VyOS support
+- 🔜 Linux containers for hosts
+
+---
+
+## 🎓 Perfect For
+
+- 📚 **Certification Studies** - JNCIS-SP, JNCIA, CCNA, CCNP
+- 🔬 **Network Testing** - Protocol testing, feature validation
+- 🏫 **Training Labs** - Teaching network concepts
+- 🔧 **Development** - Network automation development
+- 📊 **Research** - Network behavior analysis
+
+---
 
 ## 🐛 Troubleshooting
 
-### Routers Won't Start
+### Services Not Starting
 ```bash
-# Check libvirt connection
-virsh list --all
-
-# Check router status
-virsh dominfo router-name
+# Check service status
+sudo systemctl status vrhost-api
+sudo systemctl status vrhost-web
 
 # View logs
-sudo journalctl -u vrhost-api -n 50
+sudo journalctl -u vrhost-api -f
+sudo journalctl -u vrhost-web -f
+
+# Restart services
+sudo systemctl restart vrhost-api vrhost-web
 ```
 
-### Console Won't Open
+### Router Won't Boot
 ```bash
-# Check ttyd is installed
-ttyd --version
+# Check libvirt
+virsh list --all
+virsh dominfo router-name
+
+# Check KVM support
+sudo kvm-ok
+
+# View VM logs
+sudo journalctl -t libvirt -f
+```
+
+### Console Not Working
+```bash
+# Check ttyd installation
+which ttyd
 
 # Check console sessions
 ps aux | grep ttyd
 
-# Check API logs
-sudo journalctl -u vrhost-api | grep console
+# Test manual connection
+virsh console router-name
 ```
 
 ### Frontend Not Loading
 ```bash
-# Check web service
+# Check service
 sudo systemctl status vrhost-web
 
 # Rebuild frontend
@@ -288,26 +452,82 @@ npm run build
 sudo systemctl restart vrhost-web
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- Inspired by EVE-NG and GNS3
-- Built for network engineers studying for Juniper certifications
-- Special thanks to the FastAPI, React, and Cytoscape.js communities
-
-## 📧 Contact
-
-Hunter Wilson - [@Dubzyy](https://github.com/Dubzyy)
-
-Project Link: [https://github.com/Dubzyy/vrhost-lab](https://github.com/Dubzyy/vrhost-lab)
+📖 **Full troubleshooting guide**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ---
 
-**⭐ Star this repo if you find it useful!**
+## 🤝 Contributing
+
+Contributions are welcome! Whether it's:
+
+- 🐛 Bug reports
+- 💡 Feature suggestions
+- 📝 Documentation improvements
+- 🔧 Code contributions
+
+**Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.**
+
+### Development Setup
+```bash
+# Backend development
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# Frontend development
+cd frontend
+npm install
+npm start  # Runs on port 3000
+```
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Inspired by**: EVE-NG and GNS3 - the pioneers of network lab virtualization
+- **Built for**: Network engineers studying for Juniper and Cisco certifications
+- **Powered by**: 
+  - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+  - [React](https://reactjs.org/) - UI library
+  - [Cytoscape.js](https://js.cytoscape.org/) - Graph visualization
+  - [ttyd](https://github.com/tsl0922/ttyd) - Web terminal
+  - [libvirt](https://libvirt.org/) - Virtualization API
+
+---
+
+## 📧 Contact & Support
+
+**Author**: Hunter Wilson
+
+- 🐙 GitHub: [@Dubzyy](https://github.com/Dubzyy)
+- 💼 LinkedIn: [Hunter Wilson](https://linkedin.com/in/hunter-wilson)
+- 🌐 Portfolio: [portfolio.vrhost.org](http://portfolio.vrhost.org)
+
+**Project Links**:
+- 🔗 Repository: [https://github.com/Dubzyy/vrhost-lab](https://github.com/Dubzyy/vrhost-lab)
+- 🐛 Issues: [https://github.com/Dubzyy/vrhost-lab/issues](https://github.com/Dubzyy/vrhost-lab/issues)
+- 💬 Discussions: [https://github.com/Dubzyy/vrhost-lab/discussions](https://github.com/Dubzyy/vrhost-lab/discussions)
+
+---
+
+<div align="center">
+
+**⭐ Star this repo if you find it useful! ⭐**
+
+**Built with ❤️ for the network engineering community**
+
+[![GitHub stars](https://img.shields.io/github/stars/Dubzyy/vrhost-lab?style=social)](https://github.com/Dubzyy/vrhost-lab)
+[![GitHub forks](https://img.shields.io/github/forks/Dubzyy/vrhost-lab?style=social)](https://github.com/Dubzyy/vrhost-lab/fork)
+[![GitHub watchers](https://img.shields.io/github/watchers/Dubzyy/vrhost-lab?style=social)](https://github.com/Dubzyy/vrhost-lab)
+
+[🚀 Get Started](docs/INSTALLATION.md) • [📖 Documentation](#-documentation) • [🐛 Report Bug](https://github.com/Dubzyy/vrhost-lab/issues) • [💡 Request Feature](https://github.com/Dubzyy/vrhost-lab/issues)
+
+</div>
