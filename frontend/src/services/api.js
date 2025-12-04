@@ -51,4 +51,10 @@ export const labAPI = {
   stop: (name) => api.post(`/api/labs/${name}/stop`),
 };
 
+export const consoleAPI = {
+  createSession: (name) => api.post(`/api/routers/${name}/console/session`),
+  getSession: (token) => api.get(`/api/console/${token}`),
+  closeSession: (token) => api.delete(`/api/console/${token}`),
+};
+
 export default api;

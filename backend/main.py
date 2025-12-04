@@ -7,6 +7,7 @@ import libvirt
 from backend.models.router import RouterCreate, RouterInfo
 from backend.services.router_service import RouterService
 from backend.services.stats_service import StatsService
+from backend.services.console_service import ConsoleService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI):
         app.state.router_service = RouterService(app.state.libvirt_conn)
         app.state.stats_service = StatsService(app.state.libvirt_conn)
         app.state.lab_service = LabService()
+        app.state.console_service = ConsoleService()
         print("✓ Connected to libvirt")
     except Exception as e:
         print(f"✗ Failed to connect to libvirt: {e}")
@@ -24,6 +26,10 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
+    # Cleanup console sessions
+    if hasattr(app.state, 'console_service'):
+        app.state.console_service.cleanup_old_sessions()
+    
     if hasattr(app.state, 'libvirt_conn'):
         app.state.libvirt_conn.close()
         print("✓ Disconnected from libvirt")
@@ -304,3 +310,46 @@ async def stop_lab(name: str, force: bool = False):
                 failed.append({"name": router['name'], "error": result['message']})
     
     return {"success": True, "stopped": stopped, "failed": failed}
+
+
+# ============================================
+# Console Management
+# ============================================
+
+@app.post("/api/routers/{name}/console/session")
+async def create_console_session(name: str):
+    """Create a web console session for a router"""
+    try:
+        # Check if router exists
+        router = app.state.router_service.get_router_details(name)
+        if "error" in router:
+            raise HTTPException(status_code=404, detail="Router not found")
+        
+        # Create console session
+        session = app.state.console_service.create_console_session(name)
+        
+        return {
+            "success": True,
+            "token": session['token'],
+            "port": session['port']
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/console/{token}")
+async def get_console_session(token: str):
+    """Get console session info"""
+    session = app.state.console_service.get_session(token)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    
+    return {
+        "router_name": session['router_name'],
+        "port": session['port']
+    }
+
+@app.delete("/api/console/{token}")
+async def close_console_session(token: str):
+    """Close a console session"""
+    app.state.console_service.close_session(token)
+    return {"success": True}
