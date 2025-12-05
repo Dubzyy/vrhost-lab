@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**A Modern, Web-Based Network Lab Platform for Network Engineers**
+**A Modern, Web-Based Multi-Vendor Network Lab Platform**
 
 Built for certification studies, network automation, and hands-on learning
 
@@ -21,17 +21,17 @@ Built for certification studies, network automation, and hands-on learning
 
 ## 📖 Overview
 
-VRHost Lab is a lightweight, web-based platform for managing virtual network labs. It provides an intuitive interface for creating, managing, and accessing network routers through your browser - perfect for studying for certifications like JNCIS-SP, CCNA, or building complex network topologies for testing.
+VRHost Lab is a lightweight, web-based platform for managing multi-vendor virtual network labs. It provides an intuitive interface for creating, managing, and accessing Juniper and Cisco routers through your browser - perfect for studying for certifications like JNCIS-SP, CCNA, or building complex network topologies for testing.
 
 **Think EVE-NG/GNS3, but modern, lightweight, and built from the ground up for ease of use.**
 
 ### 🎯 Why VRHost Lab?
 
+- ✅ **Multi-vendor support** - Juniper vSRX and Cisco CSR1000v ready to go
 - ✅ **One-command installation** - Up and running in under 5 minutes
 - ✅ **Browser-based console** - No SSH client needed, access routers directly in your browser
 - ✅ **Interactive topology view** - Visual network diagrams that update in real-time
 - ✅ **Modern tech stack** - FastAPI backend + React frontend = fast and responsive
-- ✅ **Multi-vendor ready** - Juniper support now, Cisco IOSv coming soon
 - ✅ **Open source** - Free to use, modify, and contribute
 
 ---
@@ -45,11 +45,13 @@ Click "Console" and you're in - no SSH client required. Powered by ttyd for secu
 - Works through SSH tunnels and SOCKS proxies
 - Session timeout and automatic cleanup
 - Perfect for remote lab access
+- Supports both Juniper and Cisco platforms
 
 ### 🌐 **Interactive Network Topology**
 Beautiful, real-time topology visualization powered by Cytoscape.js.
 
 - **Color-coded status** - Green (running), Blue (starting), Yellow (stopping), Gray (stopped)
+- **Vendor badges** - Blue for Cisco, Green for Juniper
 - **Drag-and-drop positioning** - Arrange your topology exactly how you want
 - **Multiple layouts** - Circle, Grid, or custom arrangements
 - **Live updates** - Status changes reflected immediately
@@ -60,8 +62,18 @@ Organize routers into isolated lab environments.
 
 - Create separate labs for different projects or study topics
 - Start/stop entire labs with one click
+- Mix Juniper and Cisco routers in the same lab
 - Track resource usage per lab
 - Filter and search across labs
+
+### 🔀 **Multi-Vendor Support**
+Work with multiple router vendors in the same platform.
+
+- **Juniper vSRX** - Full support for virtual firewall/router
+- **Cisco CSR1000v** - Cloud Services Router for modern labs
+- Visual vendor identification with color-coded badges
+- Vendor-specific boot time warnings
+- Unified interface for all platforms
 
 ### ⚡ **Quick Actions**
 Manage routers efficiently with optimistic UI updates.
@@ -76,6 +88,7 @@ Track system resources and router states.
 
 - CPU and memory usage per router
 - Running vs total routers
+- Vendor distribution
 - Lab statistics
 - System health monitoring
 
@@ -127,10 +140,10 @@ Built with remote access in mind.
 <td width="50%">
 
 **Supported Platforms**
-- ✅ Juniper vSRX (production-ready)
-- 🔜 Cisco IOSv (coming soon)
-- 🔜 Cisco IOSvL2 (coming soon)
-- 🔜 More vendors planned
+- ✅ **Juniper vSRX** (production)
+- ✅ **Cisco CSR1000v** (production)
+- 🔜 Arista vEOS (planned)
+- 🔜 VyOS (planned)
 
 </td>
 </tr>
@@ -149,19 +162,25 @@ Built with remote access in mind.
 | **Disk** | 100GB | 250GB | 500GB+ SSD |
 | **Routers** | 2-3 | 5-10 | 15+ |
 
+**Resource Notes:**
+- Juniper vSRX: 4GB RAM, 2 vCPU per router (minimum)
+- Cisco CSR1000v: 4GB RAM, 2 vCPU per router (minimum)
+- Plan ~8GB RAM overhead for host OS and services
+
 ### Software Prerequisites
 
-- **OS**: Ubuntu 22.04 LTS or newer
+- **OS**: Ubuntu 22.04 LTS or newer (Ubuntu 24.04 also supported)
 - **Access**: Root or sudo privileges
-- **Virtualization**: Intel VT-x or AMD-V (KVM support)
+- **Virtualization**: Intel VT-x or AMD-V (KVM support required)
 - **Network**: Internet connection for dependencies
-- **Router Images**: Juniper vSRX (download separately)
+- **Router Images**: You must provide your own router images (see below)
 
 ### Deployment Options
 
-- ✅ **Bare Metal** (recommended) - Best performance
-- ✅ **Virtual Machine** - Requires nested virtualization
-- ✅ **Cloud VM** - GCP, Azure with nested virt support
+- ✅ **Bare Metal** (recommended) - Best performance for production labs
+- ✅ **Virtual Machine** - Requires nested virtualization enabled on host
+- ✅ **Cloud VM** - GCP (native nested virt), Azure (certain VM types)
+- ⚠️ **VirtualBox** - Limited nested virtualization, not recommended
 
 ---
 
@@ -173,47 +192,122 @@ Built with remote access in mind.
 git clone https://github.com/Dubzyy/vrhost-lab.git
 cd vrhost-lab
 
-# 2. Run installer
+# 2. Run installer (installs all dependencies)
 sudo bash install.sh
 
-# 3. Access the platform
-# Local: http://localhost:3000
-# Remote: http://YOUR_SERVER_IP:3000
+# 3. Installation complete! Services start automatically.
 ```
 
 ### What the Installer Does
 
-- ✅ Installs Node.js, Python, KVM, QEMU, libvirt, ttyd
-- ✅ Creates Python virtual environment
-- ✅ Builds React frontend
+- ✅ Installs Node.js 20.x, Python 3.11+, KVM, QEMU, libvirt, ttyd
+- ✅ Creates Python virtual environment with FastAPI
+- ✅ Builds React frontend for production
+- ✅ Installs automation scripts (mkjuniper, mkcsr1000v)
 - ✅ Configures systemd services (vrhost-api, vrhost-web)
-- ✅ Sets up networking
-- ✅ Starts the platform automatically
+- ✅ Verifies KVM virtualization support
+- ✅ Starts the platform automatically on port 3000
 
-### First Router
+### Post-Installation: Add Router Images
+
+**VRHost Lab does not include router images due to licensing restrictions. You must provide your own.**
+
+#### Option 1: Juniper vSRX
+
+1. **Download image:**
+   - Visit: https://support.juniper.net/support/downloads/
+   - Navigate to: vSRX → Juniper vSRX Virtual Firewall
+   - Download latest `.qcow2` image (requires free Juniper account)
+   - Recommended: vSRX 3.x (23.2R2 or newer)
+
+2. **Install image:**
 ```bash
-# 1. Download Juniper vSRX image (separately)
-# Place in: /var/lib/libvirt/images/juniper/
-
-# 2. Create router
-sudo mkjuniper r1
-
-# 3. Access via web interface
-# Click "Console" button to access router CLI
+   # Create directory
+   sudo mkdir -p /var/lib/libvirt/images/juniper
+   
+   # Move downloaded image
+   sudo mv ~/Downloads/junos-vsrx3-*.qcow2 /var/lib/libvirt/images/juniper/
+   
+   # Set permissions
+   sudo chmod 644 /var/lib/libvirt/images/juniper/*.qcow2
 ```
 
----
+3. **Update script:**
+```bash
+   sudo nano /usr/local/bin/mkjuniper
+   # Update line 13 with your image filename
+```
 
-## 📖 Documentation
+#### Option 2: Cisco CSR1000v
 
-- 📗 [**Router Setup Guide**](docs/ROUTER_SETUP.md) - Creating and configuring routers
-- 📙 [**API Documentation**](http://localhost:8000/docs) - Interactive API reference (when running)
-- 📕 [**GitHub Wiki**](https://github.com/Dubzyy/vrhost-lab/wiki) - Additional guides and tips
+1. **Download image:**
+   - Visit: https://software.cisco.com/download/home
+   - Search for: "CSR1000v"
+   - Download: `csr1000vng-universalk9.17.03.04a-serial.tgz` or newer
+   - Requires Cisco.com account (free registration)
 
-**Coming Soon:**
-- 📘 Installation Guide (detailed step-by-step)
-- 📔 Troubleshooting Guide
-- 📓 Architecture Documentation
+2. **Install image:**
+```bash
+   # Extract archive
+   cd ~/Downloads
+   tar -xzf csr1000vng-universalk9.*.tgz
+   
+   # Create directory
+   sudo mkdir -p /var/lib/libvirt/images/cisco
+   
+   # Move qcow2 file
+   sudo mv */virtioa.qcow2 /var/lib/libvirt/images/cisco/csr1000v-17.03.04a.qcow2
+   
+   # Set permissions
+   sudo chmod 644 /var/lib/libvirt/images/cisco/*.qcow2
+```
+
+3. **Update script:**
+```bash
+   sudo nano /usr/local/bin/mkcsr1000v
+   # Update line 13 with your image filename
+```
+
+### Access the Platform
+
+**Local access:**
+```
+http://localhost:3000
+```
+
+**Remote access:**
+```
+http://YOUR_SERVER_IP:3000
+```
+
+**API documentation:**
+```
+http://YOUR_SERVER_IP:8000/docs
+```
+
+### Create Your First Router
+
+**Option A: Juniper vSRX**
+```bash
+sudo mkjuniper r1
+# Wait ~90 seconds for boot
+# Access via web interface - click "Console" button
+```
+
+**Option B: Cisco CSR1000v**
+```bash
+sudo mkcsr1000v csr-r1
+# Wait ~3-5 minutes for first boot
+# Access via web interface - click "Console" button
+```
+
+**Via Web Interface:**
+1. Click "+ New Router"
+2. Enter name (e.g., "r1" or "csr-r1")
+3. Enter IP address (e.g., "10.10.50.11")
+4. Select router type (Juniper or Cisco)
+5. Click "Create Router"
+6. Wait for boot, then click "Console" to access CLI
 
 ---
 
@@ -221,65 +315,89 @@ sudo mkjuniper r1
 
 ### Method 1: SSH Tunnel (Simple)
 ```bash
+# Forward both web and API ports
 ssh -L 3000:localhost:3000 -L 8000:localhost:8000 user@your-server
 ```
 
 Then access: `http://localhost:3000`
 
-### Method 2: SSH + SOCKS Proxy (For Console)
+**Limitations:** Console access won't work (ttyd sessions blocked)
+
+### Method 2: SSH + SOCKS Proxy (Full Access)
 ```bash
+# Create SOCKS proxy + port forwarding
 ssh -D 8080 -L 3000:localhost:3000 -L 8000:localhost:8000 user@your-server
 ```
 
-Configure browser SOCKS proxy: `localhost:8080`
+**Configure browser (Firefox recommended):**
+1. Settings → Network Settings → Settings
+2. Manual proxy configuration:
+   - SOCKS Host: `localhost`, Port: `8080`
+   - Select "SOCKS v5"
+   - ✅ Enable "Proxy DNS when using SOCKS v5"
 
-### Method 3: Tailscale (Recommended)
+Access: `http://localhost:3000` (full console access works!)
+
+### Method 3: Tailscale (Recommended for Remote)
 ```bash
-# On server
+# Install on server
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
 
-# Access from anywhere
-http://100.x.x.x:3000
+# Get Tailscale IP
+tailscale ip -4
+
+# Install Tailscale on your computer
+# Sign in with same account
+# Access: http://100.x.x.x:3000
 ```
+
+**Benefits:**
+- ✅ Encrypted WireGuard tunnel
+- ✅ Works from anywhere
+- ✅ No port forwarding needed
+- ✅ Full console access
+- ✅ Cross-platform (Windows, Mac, Linux, mobile)
 
 ---
 
 ## 🏗️ Architecture
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Web Browser                             │
-│                                                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  Dashboard   │  │   Topology   │  │   Console    │      │
-│  │   (React)    │  │ (Cytoscape)  │  │    (ttyd)    │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
-└─────────┼──────────────────┼──────────────────┼─────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      Web Browser (Port 3000)                     │
+│                                                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │  Dashboard   │  │   Topology   │  │   Console (ttyd)     │  │
+│  │   (React)    │  │ (Cytoscape)  │  │   Dynamic ports      │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────────────┘  │
+└─────────┼──────────────────┼──────────────────┼───────────────────┘
           │                  │                  │
           │         HTTP/REST API + WebSocket   │
           ▼                  ▼                  ▼
-┌─────────────────────────────────────────────────────────────┐
-│              FastAPI Backend (Port 8000)                     │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  RouterService  │  LabService  │  ConsoleService    │    │
-│  │  StatsService   │  TopologyService                  │    │
-│  └──────────┬───────────────┬──────────────┬───────────┘    │
-└─────────────┼────────────────┼──────────────┼────────────────┘
-              │                │              │
-              ▼                ▼              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    libvirt / KVM Layer                       │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  Virtual Network (br0 bridge)                        │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                               │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │  vSRX-1  │  │  vSRX-2  │  │  vSRX-3  │  │  vSRX-4  │    │
-│  │ (4GB/2C) │  │ (4GB/2C) │  │ (4GB/2C) │  │ (4GB/2C) │    │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│              FastAPI Backend (Port 8000)                         │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  RouterService  │  LabService   │  ConsoleService (ttyd)  │  │
+│  │  StatsService   │  TopologyService                        │  │
+│  └──────────┬──────────────┬──────────────┬──────────────────┘  │
+└─────────────┼───────────────┼──────────────┼─────────────────────┘
+              │               │              │
+              ▼               ▼              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    libvirt / KVM Layer                           │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  Virtual Network (br0 bridge - 10.10.50.0/24)              │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │
+│  │ Juniper  │  │ Juniper  │  │  Cisco   │  │    Cisco     │    │
+│  │  vSRX-1  │  │  vSRX-2  │  │ CSR1000v │  │  CSR1000v-2  │    │
+│  │ (4GB/2C) │  │ (4GB/2C) │  │ (4GB/2C) │  │  (4GB/2C)    │    │
+│  │  ~90sec  │  │  ~90sec  │  │ ~3-5min  │  │   ~3-5min    │    │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -290,32 +408,32 @@ vrhost-lab/
 ├── backend/                    # FastAPI backend
 │   ├── main.py                # Main application entry
 │   ├── models/                # Pydantic data models
-│   │   ├── router.py
-│   │   ├── lab.py
-│   │   └── topology.py
+│   │   ├── router.py          # Router model with multi-vendor support
+│   │   ├── lab.py             # Lab model
+│   │   └── topology.py        # Topology model
 │   └── services/              # Business logic
-│       ├── router_service.py  # Router management
+│       ├── router_service.py  # Multi-vendor router management
 │       ├── lab_service.py     # Lab management
-│       ├── stats_service.py   # Statistics
-│       └── console_service.py # Web console (ttyd)
+│       ├── stats_service.py   # System statistics
+│       └── console_service.py # Web console (ttyd integration)
 │
 ├── frontend/                   # React frontend
 │   ├── src/
-│   │   ├── App.js            # Main component
-│   │   ├── Topology.js       # Cytoscape topology
+│   │   ├── App.js             # Main component with vendor support
+│   │   ├── Topology.js        # Cytoscape topology with vendor badges
 │   │   └── services/
-│   │       └── api.js        # API client
+│   │       └── api.js         # API client
 │   ├── public/
+│   ├── tailwind.config.js     # Dark theme configuration
 │   └── package.json
 │
-├── scripts/                    # Helper scripts
-│   ├── mkjuniper              # Create Juniper router
-│   ├── mkcisco-router         # Create Cisco router (WIP)
-│   ├── mkcisco-switch         # Create Cisco switch (WIP)
-│   └── mkvm                   # Generic VM creation
+├── scripts/                    # Automation scripts
+│   ├── mkjuniper              # Create Juniper vSRX router
+│   ├── mkcsr1000v             # Create Cisco CSR1000v router
+│   └── mkvm                   # Generic VM creation utility
 │
 ├── docs/                       # Documentation
-│   └── ROUTER_SETUP.md        # Router setup guide
+│   └── ROUTER_SETUP.md        # Router configuration guide
 │
 ├── install.sh                 # One-command installer
 ├── README.md                  # This file
@@ -328,55 +446,60 @@ vrhost-lab/
 
 ### ✅ Phase 1: Core Platform (Complete)
 - ✅ FastAPI backend with REST API
-- ✅ React frontend with Tailwind CSS
-- ✅ Juniper vSRX support
-- ✅ Web console access (ttyd)
-- ✅ Interactive topology view
+- ✅ React frontend with Tailwind CSS dark theme
+- ✅ Web console access via ttyd
+- ✅ Interactive topology view with Cytoscape.js
 - ✅ Multi-lab management
 - ✅ One-command installer
 - ✅ systemd service integration
+- ✅ Real-time system monitoring
 
-### 🚧 Phase 2: Multi-Vendor Support (In Progress)
-- ✅ Cisco IOSv router scripts created
-- ✅ Cisco IOSvL2 switch scripts created
-- 🔜 Cisco image integration testing
-- 🔜 Backend API multi-vendor support
-- 🔜 Frontend vendor badges/icons
-- 🔜 Topology color-coding by vendor
+### ✅ Phase 2: Multi-Vendor Support (Complete)
+- ✅ Juniper vSRX full support (production)
+- ✅ Cisco CSR1000v full support (production)
+- ✅ Backend multi-vendor router detection
+- ✅ Frontend vendor badges (blue=Cisco, green=Juniper)
+- ✅ Automated provisioning scripts for both vendors
+- ✅ Vendor-specific boot time handling
+- ✅ Unified console access for all platforms
 
 ### 🔮 Phase 3: Advanced Features (Planned)
 - 🔜 Router snapshots and cloning
-- 🔜 Configuration backup/restore
-- 🔜 Lab templates (save/load topologies)
+- 🔜 Configuration backup/restore automation
+- 🔜 Lab templates (save/load full topologies)
 - 🔜 Network diagram export (PNG/SVG)
-- 🔜 Automated lab provisioning
-- 🔜 YAML-based lab definitions
+- 🔜 Automated lab provisioning from YAML
+- 🔜 Configuration versioning with Git integration
+- 🔜 Bulk router operations
 
 ### 🚀 Phase 4: Platform Enhancement (Future)
-- 🔜 User authentication
-- 🔜 Multi-user support
-- 🔜 Role-based access control
+- 🔜 User authentication (JWT-based)
+- 🔜 Multi-user support with isolation
+- 🔜 Role-based access control (RBAC)
 - 🔜 Centralized logging (Graylog)
 - 🔜 Metrics dashboard (Prometheus/Grafana)
 - 🔜 API rate limiting
 - 🔜 WebSocket for real-time updates
+- 🔜 Email notifications for lab events
 
 ### 🌟 Phase 5: Additional Platforms (Future)
 - 🔜 Arista vEOS support
-- 🔜 Mikrotik CHR support
+- 🔜 VyOS router support
 - 🔜 Nokia VSR support
-- 🔜 VyOS support
-- 🔜 Linux containers for hosts
+- 🔜 Mikrotik CHR support
+- 🔜 Linux containers for endpoint hosts
+- 🔜 IOL/IOU support (Cisco legacy platforms)
 
 ---
 
 ## 🎓 Perfect For
 
-- 📚 **Certification Studies** - JNCIS-SP, JNCIA, CCNA, CCNP
-- 🔬 **Network Testing** - Protocol testing, feature validation
-- 🏫 **Training Labs** - Teaching network concepts
-- 🔧 **Development** - Network automation development
-- 📊 **Research** - Network behavior analysis
+- 📚 **Certification Studies** - JNCIS-SP, JNCIA, CCNA, CCNP, CCIE lab practice
+- 🔬 **Network Testing** - Protocol testing, feature validation, interoperability
+- 🏫 **Training Labs** - Teaching network concepts, university courses
+- 🔧 **Development** - Network automation development with Ansible/Python
+- 📊 **Research** - Network behavior analysis, performance testing
+- 💼 **Professional** - Pre-production testing, change validation
 
 ---
 
@@ -392,44 +515,82 @@ sudo systemctl status vrhost-web
 sudo journalctl -u vrhost-api -f
 sudo journalctl -u vrhost-web -f
 
-# Restart services
+# Common fixes
 sudo systemctl restart vrhost-api vrhost-web
+sudo systemctl daemon-reload
 ```
 
 ### Router Won't Boot
 ```bash
-# Check libvirt
+# Check VM status
 virsh list --all
 virsh dominfo router-name
 
 # Check KVM support
 sudo kvm-ok
 
-# View VM logs
-sudo journalctl -t libvirt -f
+# View VM console directly
+virsh console router-name
+# Press Ctrl+] to exit
+
+# Check libvirt logs
+sudo journalctl -t libvirtd -f
 ```
 
-### Console Not Working
+### Console Session Stuck
 ```bash
-# Check ttyd installation
-which ttyd
-
-# Check console sessions
+# Check ttyd processes
 ps aux | grep ttyd
 
-# Test manual connection
-virsh console router-name
+# Kill stuck sessions
+sudo pkill -9 ttyd
+
+# Restart API to recreate console service
+sudo systemctl restart vrhost-api
 ```
 
 ### Frontend Not Loading
 ```bash
-# Check service
+# Check web service
 sudo systemctl status vrhost-web
 
 # Rebuild frontend
 cd /opt/vrhost-lab/frontend
+npm install
 npm run build
 sudo systemctl restart vrhost-web
+
+# Clear browser cache (Ctrl+Shift+R)
+```
+
+### Image Boot Issues
+
+**Juniper vSRX:**
+- Verify image path in `/usr/local/bin/mkjuniper`
+- Ensure image is qcow2 format
+- Check permissions: `sudo chmod 644 /var/lib/libvirt/images/juniper/*.qcow2`
+- Boot time: ~90 seconds (be patient!)
+
+**Cisco CSR1000v:**
+- Verify image path in `/usr/local/bin/mkcsr1000v`
+- First boot takes 3-5 minutes (hardware initialization)
+- Subsequent boots: ~2 minutes
+- Use VNC if available: `virsh vncdisplay router-name`
+
+**Note on Cisco IOSv:** Traditional IOSv images have compatibility issues with modern KVM. Use CSR1000v instead - it's designed for virtualization and works reliably.
+
+### Network Connectivity Issues
+```bash
+# Check bridge
+ip link show br0
+brctl show
+
+# Restart libvirt network
+sudo virsh net-destroy default
+sudo virsh net-start default
+
+# Check router interfaces
+virsh domiflist router-name
 ```
 
 **For more help**, open an issue on [GitHub Issues](https://github.com/Dubzyy/vrhost-lab/issues).
@@ -444,8 +605,10 @@ Contributions are welcome! Whether it's:
 - 💡 Feature suggestions
 - 📝 Documentation improvements
 - 🔧 Code contributions
+- 🧪 Testing on different platforms
 
 **How to contribute:**
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
@@ -455,16 +618,29 @@ Contributions are welcome! Whether it's:
 ### Development Setup
 ```bash
 # Backend development
-cd backend
-python3 -m venv venv
+cd /opt/vrhost-lab/backend
 source venv/bin/activate
 pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend development
-cd frontend
+cd /opt/vrhost-lab/frontend
 npm install
-npm start  # Runs on port 3000
+npm start  # Runs on port 3000 with hot reload
+```
+
+### Testing
+```bash
+# Test router creation
+sudo mkjuniper test-r1
+sudo mkcsr1000v test-csr1
+
+# Test API endpoints
+curl http://localhost:8000/api/health
+curl http://localhost:8000/api/routers
+
+# Check logs
+sudo journalctl -u vrhost-api -f
 ```
 
 ---
@@ -473,39 +649,55 @@ npm start  # Runs on port 3000
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+**You are free to:**
+- ✅ Use commercially
+- ✅ Modify the code
+- ✅ Distribute
+- ✅ Use privately
+
+**You must:**
+- 📋 Include copyright notice
+- 📋 Include license text
+
 ---
 
 ## 🙏 Acknowledgments
 
 - **Inspired by**: EVE-NG and GNS3 - the pioneers of network lab virtualization
 - **Built for**: Network engineers studying for Juniper and Cisco certifications
-- **Powered by**: 
+- **Powered by**:
   - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-  - [React](https://reactjs.org/) - UI library
-  - [Cytoscape.js](https://js.cytoscape.org/) - Graph visualization
-  - [ttyd](https://github.com/tsl0922/ttyd) - Web terminal
-  - [libvirt](https://libvirt.org/) - Virtualization API
+  - [React](https://reactjs.org/) - UI library for building user interfaces
+  - [Cytoscape.js](https://js.cytoscape.org/) - Graph visualization and analysis
+  - [ttyd](https://github.com/tsl0922/ttyd) - Share your terminal over the web
+  - [libvirt](https://libvirt.org/) - Virtualization API and management
+  - [KVM](https://www.linux-kvm.org/) - Kernel-based Virtual Machine
+  - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 
 ---
 
 ## 📧 Contact & Support
 
-**Author**: Hunter Wilson
+**Author**: Hunter Wilson  
+*Network Engineer | Full-Stack Developer*
 
 - 🐙 GitHub: [@Dubzyy](https://github.com/Dubzyy)
 - 💼 LinkedIn: [Hunter Wilson](https://linkedin.com/in/hunter-wilsonit)
 - 🌐 Portfolio: [https://portfolio.vrhost.org](https://portfolio.vrhost.org)
+- 📧 Email: admin@vrhost.org
 
 **Project Links**:
+
 - 🔗 Repository: [https://github.com/Dubzyy/vrhost-lab](https://github.com/Dubzyy/vrhost-lab)
 - 🐛 Issues: [https://github.com/Dubzyy/vrhost-lab/issues](https://github.com/Dubzyy/vrhost-lab/issues)
 - 💬 Discussions: [https://github.com/Dubzyy/vrhost-lab/discussions](https://github.com/Dubzyy/vrhost-lab/discussions)
+- ⭐ Give us a star: [Star on GitHub](https://github.com/Dubzyy/vrhost-lab)
 
 ---
 
 <div align="center">
 
-**⭐ Star this repo if you find it useful! ⭐**
+**⭐ If you find VRHost Lab useful, please star this repository! ⭐**
 
 **Built with ❤️ for the network engineering community**
 
@@ -514,5 +706,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [![GitHub watchers](https://img.shields.io/github/watchers/Dubzyy/vrhost-lab?style=social)](https://github.com/Dubzyy/vrhost-lab)
 
 [🚀 Get Started](#-quick-start) • [📖 Documentation](#-documentation) • [🐛 Report Bug](https://github.com/Dubzyy/vrhost-lab/issues) • [💡 Request Feature](https://github.com/Dubzyy/vrhost-lab/issues)
+
+---
+
+**VRHost Lab** - Your gateway to mastering network engineering
+
+*Making network labs accessible, modern, and enjoyable*
 
 </div>

@@ -1,0 +1,45 @@
+#!/bin/bash
+# Create Cisco CSR1000v Router
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: mkcsr1000v <router-name>"
+    echo "Example: mkcsr1000v csr-r1"
+    exit 1
+fi
+
+ROUTER_NAME=$1
+BASE_IMAGE="/var/lib/libvirt/images/cisco/csr1000v-17.03.04a.qcow2"
+DISK_PATH="/var/lib/libvirt/images/${ROUTER_NAME}.qcow2"
+RAM=4096  # CSR1000v needs 4GB minimum
+VCPUS=2
+
+echo "Creating Cisco CSR1000v Router: $ROUTER_NAME"
+
+# Create backing chain from base image
+qemu-img create -f qcow2 -F qcow2 -b "$BASE_IMAGE" "$DISK_PATH"
+
+# Create VM
+virt-install \
+  --name="${ROUTER_NAME}" \
+  --memory="${RAM}" \
+  --vcpus="${VCPUS}" \
+  --disk path="${DISK_PATH}",device=disk,bus=virtio,format=qcow2 \
+  --network bridge=br0,model=virtio \
+  --network bridge=br0,model=virtio \
+  --network bridge=br0,model=virtio \
+  --boot hd \
+  --graphics vnc,listen=0.0.0.0 \
+  --serial pty \
+  --console pty,target_type=serial \
+  --noautoconsole \
+  --os-variant=linux2020 \
+  --import
+
+echo ""
+echo "✅ Cisco CSR1000v Router $ROUTER_NAME created!"
+echo ""
+echo "Access:"
+echo "  VNC:     virsh vncdisplay $ROUTER_NAME"
+echo "  Console: virsh console $ROUTER_NAME (wait 3-5 minutes for first boot)"
+echo ""
+echo "Note: First boot takes 3-5 minutes. Be patient!"

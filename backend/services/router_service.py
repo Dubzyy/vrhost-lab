@@ -5,29 +5,63 @@ from typing import List, Dict
 class RouterService:
     def __init__(self, conn: libvirt.virConnect):
         self.conn = conn
-    
+
+    def get_router_type(self, domain) -> str:
+        """Detect router type from domain XML or name"""
+        try:
+            xml = domain.XMLDesc()
+            name = domain.name()
+            
+            # Check disk path for CSR1000v
+            if 'csr1000v' in xml.lower():
+                return 'cisco'
+            # Check disk path for vSRX
+            elif 'vsrx' in xml.lower():
+                return 'juniper'
+            # Check name patterns
+            elif name.startswith('csr-') or 'cisco' in name.lower():
+                return 'cisco'
+            else:
+                return 'juniper'  # Default to juniper
+        except Exception:
+            return 'juniper'
+
     def list_routers(self) -> List[Dict]:
-        """List all routers/VMs"""
+        """List all routers/VMs with router type"""
         routers = []
         domains = self.conn.listAllDomains()
-        
+
         for domain in domains:
             info = domain.info()
+            router_type = self.get_router_type(domain)
+            
             routers.append({
                 "name": domain.name(),
                 "state": self._get_state_name(info[0]),
                 "memory_mb": int(info[1] / 1024),
                 "vcpus": info[3],
-                "id": domain.ID() if domain.ID() != -1 else None
+                "id": domain.ID() if domain.ID() != -1 else None,
+                "router_type": router_type
             })
-        
+
         return routers
-    
-    def create_router(self, name: str, ip: str, router_type: str, ram: int, vcpus: int) -> Dict:
-        """Create router using mkjuniper script"""
-        cmd = ["mkjuniper", name, ip, router_type, str(ram), str(vcpus)]
-        
+
+    def create_router(self, name: str, ip: str = None, router_type: str = "juniper", 
+                     ram: int = 4, vcpus: int = 2) -> Dict:
+        """Create router - supports Juniper vSRX and Cisco CSR1000v"""
         try:
+            if router_type.lower() in ["juniper", "vsrx"]:
+                # Juniper vSRX - use mkjuniper script
+                cmd = ["mkjuniper", name]
+            elif router_type.lower() in ["cisco", "csr1000v", "csr"]:
+                # Cisco CSR1000v - use mkcsr1000v script
+                cmd = ["mkcsr1000v", name]
+            else:
+                return {
+                    "success": False,
+                    "message": f"Unsupported router type: {router_type}. Use 'juniper' or 'cisco'"
+                }
+
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -35,11 +69,12 @@ class RouterService:
                 timeout=120,
                 check=True
             )
-            
+
             return {
                 "success": True,
-                "message": f"Router {name} created successfully",
-                "output": result.stdout
+                "message": f"{router_type.capitalize()} router {name} created successfully",
+                "output": result.stdout,
+                "router_type": router_type
             }
         except subprocess.CalledProcessError as e:
             return {
@@ -47,30 +82,52 @@ class RouterService:
                 "message": f"Failed to create router: {e.stderr}",
                 "error": e.stderr
             }
-    
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "message": "Router creation timed out after 120 seconds"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error creating router: {str(e)}"
+            }
+
     def delete_router(self, name: str) -> Dict:
-        """Delete router using mkjuniper script"""
-        cmd = ["mkjuniper", "delete", name]
-        
+        """Delete router (works for both Juniper and Cisco)"""
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            # First try to get the domain to determine type
+            try:
+                domain = self.conn.lookupByName(name)
+                router_type = self.get_router_type(domain)
+                
+                # Stop the VM if running
+                if domain.isActive():
+                    domain.destroy()
+                
+                # Undefine (delete) the VM
+                domain.undefine()
+                
+            except libvirt.libvirtError:
+                pass  # VM doesn't exist in libvirt
             
+            # Remove disk image
+            import os
+            disk_path = f"/var/lib/libvirt/images/{name}.qcow2"
+            if os.path.exists(disk_path):
+                os.remove(disk_path)
+
             return {
                 "success": True,
                 "message": f"Router {name} deleted successfully"
             }
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             return {
                 "success": False,
-                "message": f"Failed to delete router: {e.stderr}",
-                "error": e.stderr
+                "message": f"Failed to delete router: {str(e)}",
+                "error": str(e)
             }
-    
+
     @staticmethod
     def _get_state_name(state_code: int) -> str:
         """Convert libvirt state code to name"""
@@ -86,46 +143,47 @@ class RouterService:
             domain = self.conn.lookupByName(name)
             if domain.isActive():
                 return {"success": False, "message": f"Router {name} is already running"}
-            
+
             domain.create()
             return {"success": True, "message": f"Router {name} started"}
         except libvirt.libvirtError as e:
             return {"success": False, "message": str(e)}
-    
+
     def stop_router(self, name: str, force: bool = False) -> Dict:
         """Stop a running router"""
         try:
             domain = self.conn.lookupByName(name)
             if not domain.isActive():
                 return {"success": False, "message": f"Router {name} is already stopped"}
-            
+
             if force:
                 domain.destroy()  # Force stop
             else:
                 domain.shutdown()  # Graceful shutdown
-            
+
             return {"success": True, "message": f"Router {name} stopped"}
         except libvirt.libvirtError as e:
             return {"success": False, "message": str(e)}
-    
+
     def restart_router(self, name: str) -> Dict:
         """Restart a router"""
         try:
             domain = self.conn.lookupByName(name)
             if not domain.isActive():
                 return {"success": False, "message": f"Router {name} is not running"}
-            
+
             domain.reboot()
             return {"success": True, "message": f"Router {name} restarting"}
         except libvirt.libvirtError as e:
             return {"success": False, "message": str(e)}
-    
+
     def get_router_details(self, name: str) -> Dict:
         """Get detailed info about a router"""
         try:
             domain = self.conn.lookupByName(name)
             info = domain.info()
-            
+            router_type = self.get_router_type(domain)
+
             return {
                 "name": name,
                 "state": self._get_state_name(info[0]),
@@ -135,7 +193,8 @@ class RouterService:
                 "cpu_time_ns": info[4],
                 "id": domain.ID() if domain.ID() != -1 else None,
                 "uuid": domain.UUIDString(),
-                "autostart": domain.autostart() == 1
+                "autostart": domain.autostart() == 1,
+                "router_type": router_type
             }
         except libvirt.libvirtError as e:
             return {"error": str(e)}
@@ -145,7 +204,7 @@ class RouterService:
         domains = self.conn.listAllDomains()
         started = []
         failed = []
-        
+
         for domain in domains:
             if not domain.isActive():
                 try:
@@ -153,20 +212,20 @@ class RouterService:
                     started.append(domain.name())
                 except Exception as e:
                     failed.append({"name": domain.name(), "error": str(e)})
-        
+
         return {
             "success": True,
             "started": started,
             "failed": failed,
             "count": len(started)
         }
-    
+
     def stop_all_routers(self, force: bool = False) -> Dict:
         """Stop all running routers"""
         domains = self.conn.listAllDomains()
         stopped = []
         failed = []
-        
+
         for domain in domains:
             if domain.isActive():
                 try:
@@ -177,7 +236,7 @@ class RouterService:
                     stopped.append(domain.name())
                 except Exception as e:
                     failed.append({"name": domain.name(), "error": str(e)})
-        
+
         return {
             "success": True,
             "stopped": stopped,
