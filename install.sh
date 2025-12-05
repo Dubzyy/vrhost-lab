@@ -76,7 +76,11 @@ apt-get install -y \
     virt-manager \
     virtinst \
     libguestfs-tools \
-    guestfs-tools
+    guestfs-tools \
+    pkg-config \
+    libvirt-dev \
+    python3-dev \
+    gcc
 
 # Add current user to libvirt groups (if not root)
 if [ -n "$SUDO_USER" ]; then
