@@ -7,11 +7,13 @@ import libvirt
 from backend.models.router import RouterCreate, RouterInfo
 from backend.models.topology import Topology, TopologyInfo
 from backend.models.lab import LabCreate, LabInfo
+from backend.models.link import Link, LinkCreate
 from backend.services.router_service import RouterService
 from backend.services.stats_service import StatsService
 from backend.services.console_service import ConsoleService
 from backend.services.topology_service import TopologyService
 from backend.services.lab_service import LabService
+from backend.services.link_service import LinkService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,7 +26,9 @@ async def lifespan(app: FastAPI):
         app.state.lab_service = LabService()
         app.state.console_service = ConsoleService()
         app.state.topology_service = TopologyService()
+        app.state.link_service = LinkService()
         print("✓ Connected to libvirt")
+        print("✓ Link service initialized")
     except Exception as e:
         print(f"✗ Failed to connect to libvirt: {e}")
 
@@ -120,9 +124,13 @@ async def create_router(router: RouterCreate, request: Request):
 async def delete_router(name: str, request: Request):
     """Delete a router"""
     try:
+        # Delete associated links first
+        deleted_links = request.app.state.link_service.delete_router_links(name)
+
         result = request.app.state.router_service.delete_router(name)
 
         if result["success"]:
+            result["deleted_links"] = deleted_links
             return result
         else:
             raise HTTPException(status_code=500, detail=result["message"])
@@ -144,6 +152,10 @@ async def start_router(name: str, request: Request):
     """Start a stopped router"""
     result = request.app.state.router_service.start_router(name)
     if result["success"]:
+        # Update link status - PASS router_service to check both routers
+        request.app.state.link_service.update_links_for_router(
+            name, "running", request.app.state.router_service
+        )
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
@@ -153,6 +165,10 @@ async def stop_router(name: str, force: bool = False, request: Request = None):
     """Stop a running router"""
     result = request.app.state.router_service.stop_router(name, force)
     if result["success"]:
+        # Update link status - PASS router_service to check both routers
+        request.app.state.link_service.update_links_for_router(
+            name, "stopped", request.app.state.router_service
+        )
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
@@ -162,6 +178,10 @@ async def restart_router(name: str, request: Request):
     """Restart a router"""
     result = request.app.state.router_service.restart_router(name)
     if result["success"]:
+        # Update link status - PASS router_service to check both routers
+        request.app.state.link_service.update_links_for_router(
+            name, "running", request.app.state.router_service
+        )
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
@@ -172,6 +192,11 @@ async def get_router_details(name: str, request: Request):
     result = request.app.state.router_service.get_router_details(name)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
+
+    # Add links to router details
+    links = request.app.state.link_service.get_router_links(name)
+    result["links"] = links
+
     return result
 
 @app.post("/api/routers/bulk/start-all")
@@ -187,6 +212,69 @@ async def stop_all_routers(force: bool = False, request: Request = None):
     return result
 
 # ============================================
+# Link Management
+# ============================================
+
+@app.get("/api/links")
+async def list_links(lab: str = None, request: Request = None):
+    """Get all network links, optionally filtered by lab"""
+    try:
+        links = request.app.state.link_service.list_links(lab=lab)
+        return {
+            "links": links,
+            "count": len(links)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/links")
+async def create_link(link: LinkCreate, request: Request):
+    """Create a new network link between two routers"""
+    try:
+        # PASS router_service to check initial status of both routers
+        result = request.app.state.link_service.create_link(
+            link, request.app.state.router_service
+        )
+
+        if result["success"]:
+            return result
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/links/{link_id}")
+async def delete_link(link_id: str, request: Request):
+    """Delete a network link"""
+    try:
+        result = request.app.state.link_service.delete_link(link_id)
+
+        if result["success"]:
+            return result
+        else:
+            raise HTTPException(status_code=404, detail=result["message"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/links/{link_id}")
+async def get_link(link_id: str, request: Request):
+    """Get details of a specific link"""
+    link = request.app.state.link_service.get_link(link_id)
+    if not link:
+        raise HTTPException(status_code=404, detail="Link not found")
+    return link.dict()
+
+@app.get("/api/routers/{name}/links")
+async def get_router_links(name: str, request: Request):
+    """Get all links connected to a specific router"""
+    links = request.app.state.link_service.get_router_links(name)
+    return {
+        "router": name,
+        "links": links,
+        "count": len(links)
+    }
+
+# ============================================
 # Statistics
 # ============================================
 
@@ -194,16 +282,16 @@ async def stop_all_routers(force: bool = False, request: Request = None):
 async def get_stats(request: Request):
     """Get simplified system statistics for dashboard"""
     system_stats = request.app.state.stats_service.get_system_stats()
-    
+
     # Calculate percentages
     memory_percent = 0
     if system_stats.get('resources'):
         memory_used = system_stats['resources']['memory_used_mb']
         memory_total = system_stats['resources']['memory_total_mb']
         memory_percent = (memory_used / memory_total * 100) if memory_total > 0 else 0
-    
+
     cpu_percent = system_stats.get('disk', {}).get('used_percent', 0)
-    
+
     return {
         "running_routers": system_stats.get('vms', {}).get('running', 0),
         "total_routers": system_stats.get('vms', {}).get('total', 0),
@@ -317,6 +405,10 @@ async def start_lab(name: str, request: Request):
             result = request.app.state.router_service.start_router(router['name'])
             if result['success']:
                 started.append(router['name'])
+                # Update link status - PASS router_service to check both routers
+                request.app.state.link_service.update_links_for_router(
+                    router['name'], "running", request.app.state.router_service
+                )
             else:
                 failed.append({"name": router['name'], "error": result['message']})
 
@@ -334,6 +426,10 @@ async def stop_lab(name: str, force: bool = False, request: Request = None):
             result = request.app.state.router_service.stop_router(router['name'], force)
             if result['success']:
                 stopped.append(router['name'])
+                # Update link status - PASS router_service to check both routers
+                request.app.state.link_service.update_links_for_router(
+                    router['name'], "stopped", request.app.state.router_service
+                )
             else:
                 failed.append({"name": router['name'], "error": result['message']})
 

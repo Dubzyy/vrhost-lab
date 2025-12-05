@@ -1,0 +1,11 @@
+{
+  "vSRX1-ge001-vQFX1-xe001": {
+    "id": "vSRX1-ge001-vQFX1-xe001",
+    "source_router": "vSRX1",
+    "source_interface": "ge-0/0/1",
+    "target_router": "vQFX1",
+    "target_interface": "xe-0/0/1",
+    "status": "up",
+    "lab": null
+  }
+}

@@ -6,6 +6,7 @@ const API_BASE = process.env.REACT_APP_API_URL || `http://${window.location.host
 
 function App() {
   const [routers, setRouters] = useState([]);
+  const [links, setLinks] = useState([]);
   const [stats, setStats] = useState({});
   const [newRouterName, setNewRouterName] = useState('');
   const [newRouterIP, setNewRouterIP] = useState('');
@@ -16,9 +17,11 @@ function App() {
 
   useEffect(() => {
     fetchRouters();
+    fetchLinks();
     fetchStats();
     const interval = setInterval(() => {
       fetchRouters();
+      fetchLinks();
       fetchStats();
     }, 5000);
     return () => clearInterval(interval);
@@ -30,6 +33,15 @@ function App() {
       setRouters(response.data.routers || response.data);
     } catch (err) {
       console.error('Failed to fetch devices:', err);
+    }
+  };
+
+  const fetchLinks = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/api/links`);
+      setLinks(response.data.links || []);
+    } catch (err) {
+      console.error('Failed to fetch links:', err);
     }
   };
 
@@ -73,12 +85,13 @@ function App() {
   };
 
   const deleteRouter = async (name) => {
-    if (!window.confirm(`Are you sure you want to delete ${name}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ${name}? This will also delete all connected links.`)) return;
 
     try {
       await axios.delete(`${API_BASE}/api/routers/${name}`);
       setSuccess(`Device ${name} deleted`);
       fetchRouters();
+      fetchLinks(); // Refresh links after router deletion
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to delete device');
@@ -89,6 +102,7 @@ function App() {
     try {
       await axios.post(`${API_BASE}/api/routers/${name}/start`);
       fetchRouters();
+      fetchLinks(); // Refresh links to update status
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to start device');
     }
@@ -98,6 +112,7 @@ function App() {
     try {
       await axios.post(`${API_BASE}/api/routers/${name}/stop`);
       fetchRouters();
+      fetchLinks(); // Refresh links to update status
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to stop device');
     }
@@ -107,8 +122,21 @@ function App() {
     try {
       await axios.post(`${API_BASE}/api/routers/${name}/restart`);
       fetchRouters();
+      fetchLinks(); // Refresh links to update status
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to restart device');
+    }
+  };
+
+  const createLink = async (linkData) => {
+    try {
+      const response = await axios.post(`${API_BASE}/api/links`, linkData);
+      setSuccess(`Link created: ${linkData.source_router} ↔ ${linkData.target_router}`);
+      fetchLinks(); // Refresh links
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create link');
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -189,8 +217,8 @@ function App() {
                 <div className="text-gray-400">Total Devices</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-400">{stats.cpu_percent?.toFixed(1) || 0}%</div>
-                <div className="text-gray-400">CPU</div>
+                <div className="text-2xl font-bold text-purple-400">{links.length || 0}</div>
+                <div className="text-gray-400">Links</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-orange-400">{stats.memory_percent?.toFixed(1) || 0}%</div>
@@ -270,11 +298,12 @@ function App() {
 
         {/* Topology Visualization */}
         <div className="bg-gray-800 rounded-lg shadow-xl mb-8 border border-gray-700" style={{ height: '600px' }}>
-          <div className="p-6 pb-0">
-            <h2 className="text-2xl font-bold text-white">Network Topology</h2>
-          </div>
-          <div style={{ height: 'calc(100% - 80px)' }}>
-            <Topology routers={routers} />
+          <div style={{ height: '100%' }}>
+            <Topology 
+              routers={routers} 
+              links={links}
+              onCreateLink={createLink}
+            />
           </div>
         </div>
 
@@ -295,9 +324,19 @@ function App() {
               <tbody>
                 {routers.map((router) => {
                   const badge = getRouterTypeBadge(router.router_type);
+                  const routerLinks = links.filter(
+                    link => link.source_router === router.name || link.target_router === router.name
+                  );
                   return (
                     <tr key={router.name} className="border-b border-gray-700 hover:bg-gray-750">
-                      <td className="py-3 px-4 font-semibold text-white">{router.name}</td>
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-white">{router.name}</div>
+                        {routerLinks.length > 0 && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {routerLinks.length} link{routerLinks.length !== 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </td>
                       <td className="py-3 px-4">
                         <span className={`px-3 py-1 rounded text-xs font-semibold text-white ${badge.class}`}>
                           {badge.label}
@@ -365,6 +404,43 @@ function App() {
             </table>
           </div>
         </div>
+
+        {/* Links List (if any exist) */}
+        {links.length > 0 && (
+          <div className="bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-700 mt-8">
+            <h2 className="text-2xl font-bold mb-4 text-white">Network Links</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-3 px-4 text-gray-300">Source</th>
+                    <th className="text-left py-3 px-4 text-gray-300">Target</th>
+                    <th className="text-left py-3 px-4 text-gray-300">Interfaces</th>
+                    <th className="text-left py-3 px-4 text-gray-300">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {links.map((link) => (
+                    <tr key={link.id} className="border-b border-gray-700 hover:bg-gray-750">
+                      <td className="py-3 px-4 font-semibold text-white">{link.source_router}</td>
+                      <td className="py-3 px-4 font-semibold text-white">{link.target_router}</td>
+                      <td className="py-3 px-4 text-gray-300 text-sm">
+                        {link.source_interface} ↔ {link.target_interface}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded text-xs font-semibold text-white ${
+                          link.status === 'up' ? 'bg-green-500' : 'bg-red-500'
+                        }`}>
+                          {link.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
