@@ -27,16 +27,41 @@ VRHost Lab is a lightweight, web-based platform for managing multi-vendor virtua
 
 ### 🎯 Why VRHost Lab?
 
+- ✅ **Visual network topology** - Interactive graph visualization with click-to-connect links
 - ✅ **Multi-vendor support** - Juniper vSRX/vQFX, Cisco CSR1000v/IOSvL2
 - ✅ **One-command installation** - Up and running in under 5 minutes
 - ✅ **Browser-based console** - No SSH client needed, access devices directly in your browser
-- ✅ **Interactive topology view** - Visual network diagrams that update in real-time
+- ✅ **Real-time link management** - Create, visualize, and manage connections between devices
 - ✅ **Modern tech stack** - FastAPI backend + React frontend = fast and responsive
 - ✅ **Open source** - Free to use, modify, and contribute
 
 ---
 
 ## ✨ Features
+
+### 🌐 **Interactive Network Topology** ⭐ NEW!
+Beautiful, real-time topology visualization with interactive link management powered by Cytoscape.js.
+
+- **Visual link creation** - Click two routers to create connections with interface details
+- **Real-time status** - Green solid lines for UP links, red dashed lines for DOWN links
+- **Interface-level detail** - See exact interfaces connected (e.g., ge-0/0/1 ↔ xe-0/0/1)
+- **Drag-and-drop positioning** - Arrange your topology exactly how you want
+- **Multiple layouts** - Circle, Grid, or custom arrangements with position persistence
+- **Color-coded status** - Green (running), Blue (starting), Yellow (stopping), Gray (stopped)
+- **Vendor badges** - Blue for Cisco devices, Green for Juniper devices
+- **Link management** - Full CRUD operations for network connections
+- **Auto-refresh** - Status updates every 5 seconds automatically
+- **vQFX unified view** - Shows single node for RE+PFE pair
+
+### 🔗 **Link Management System** ⭐ NEW!
+Complete backend and frontend for managing network connections.
+
+- **Backend persistence** - Links stored in JSON with automatic sync
+- **Status tracking** - Automatically detects if both routers are running
+- **Auto-cleanup** - Links deleted when routers are deleted
+- **API endpoints** - Full REST API for link operations (GET/POST/DELETE)
+- **Multi-vendor support** - Works with all router and switch types
+- **Bidirectional** - Links work in both directions automatically
 
 ### 🖥️ **Web-Based Console Access**
 Click "Console" and you're in - no SSH client required. Powered by ttyd for secure, token-based terminal sessions.
@@ -46,18 +71,6 @@ Click "Console" and you're in - no SSH client required. Powered by ttyd for secu
 - Session timeout (10 minutes) and automatic cleanup
 - Perfect for remote lab access
 - Supports all device types including vQFX dual-VM architecture
-
-### 🌐 **Interactive Network Topology**
-Beautiful, real-time topology visualization powered by Cytoscape.js.
-
-- **Color-coded status** - Green (running), Blue (starting), Yellow (stopping), Gray (stopped)
-- **Vendor badges** - Blue for Cisco devices, Green for Juniper devices
-- **Device type identification** - Routers vs switches clearly labeled
-- **Drag-and-drop positioning** - Arrange your topology exactly how you want
-- **Multiple layouts** - Circle, Grid, or custom arrangements
-- **Live updates** - Status changes reflected immediately
-- **Click for details** - Select nodes to see device info
-- **vQFX unified view** - Shows single node for RE+PFE pair
 
 ### 🏗️ **Multi-Lab Management**
 Organize devices into isolated lab environments.
@@ -74,7 +87,7 @@ Work with multiple router and switch vendors in the same platform.
 - **Juniper vSRX** - Full support for virtual firewall/router
 - **Cisco CSR1000v** - Cloud Services Router for modern labs
 - **Cisco IOSvL2** - Layer 2/3 switch with 16 ports
-- **Juniper vQFX** - Virtual QFX switch with 12x 10GbE ports (NEW!)
+- **Juniper vQFX** - Virtual QFX switch with 12x 10GbE ports
 - Visual vendor identification with color-coded badges
 - Vendor-specific boot time warnings
 - Unified interface for all platforms
@@ -96,6 +109,7 @@ Track system resources and device states.
 - Running vs total devices (accounts for vQFX dual-VM)
 - Vendor distribution
 - Lab statistics
+- Link status monitoring
 - System health monitoring
 
 ### 🔐 **Remote Access Ready**
@@ -119,6 +133,7 @@ Built with remote access in mind.
 - ⚡ FastAPI (ASGI framework)
 - 🖥️ libvirt for KVM/QEMU
 - 💻 ttyd for web terminals
+- 🔗 Link management service
 - 🦄 uvicorn server
 
 </td>
@@ -127,9 +142,10 @@ Built with remote access in mind.
 **Frontend**
 - ⚛️ React 18.3
 - 🎨 Tailwind CSS
-- 📊 Cytoscape.js
+- 📊 Cytoscape.js (topology)
 - 🔗 Axios HTTP client
 - 📱 Responsive design
+- 🔄 Auto-refresh (5s)
 
 </td>
 </tr>
@@ -140,6 +156,7 @@ Built with remote access in mind.
 - 🔧 KVM/QEMU virtualization
 - 🔄 systemd services
 - 🌉 Linux bridge networking
+- 📦 JSON persistence
 - 🐧 Ubuntu 22.04/24.04
 
 </td>
@@ -176,7 +193,7 @@ Built with remote access in mind.
   - Boot time: ~2-3 minutes
   - Features: 16 ports (Gi0/0-Gi3/3), VLANs, STP, trunking, L3 routing
 
-- **Juniper vQFX** - Virtual QFX switch (NEW!)
+- **Juniper vQFX** - Virtual QFX switch
   - Resources: 4GB RAM total (2GB RE + 2GB PFE), 2 vCPU
   - Boot time: ~7-10 minutes (dual-VM architecture)
   - Features: 12x 10GbE ports, full JunOS, VLANs, LACP, L2/L3 switching
@@ -243,10 +260,11 @@ sudo bash install.sh
 
 - ✅ Installs Node.js 20.x, Python 3.11+, KVM, QEMU, libvirt, ttyd
 - ✅ Creates Python virtual environment with FastAPI
-- ✅ Builds React frontend for production
+- ✅ Builds React frontend for production with Cytoscape.js
 - ✅ Installs automation scripts (mkjuniper, mkcsr1000v, mkviosl2, mkvqfx)
 - ✅ Configures systemd services (vrhost-api, vrhost-web)
 - ✅ Verifies KVM virtualization support
+- ✅ Creates data directory for link persistence
 - ✅ Starts the platform automatically on port 3000
 
 ### Post-Installation: Add Device Images
@@ -339,7 +357,7 @@ sudo bash install.sh
    # Update line 13 with your image filename
 ```
 
-#### Option 4: Juniper vQFX (Switch) - NEW!
+#### Option 4: Juniper vQFX (Switch)
 
 1. **Download images:**
    - Visit: https://support.juniper.net/support/downloads/
@@ -409,7 +427,7 @@ sudo mkviosl2 sw1
 # 16 ports available: Gi0/0 through Gi3/3
 ```
 
-**Option D: Juniper vQFX Switch** (NEW!)
+**Option D: Juniper vQFX Switch**
 ```bash
 sudo mkvqfx sw2
 # Wait ~7-10 minutes for boot (creates 2 VMs: RE + PFE)
@@ -428,9 +446,48 @@ sudo mkvqfx-delete sw2
    - Juniper vSRX (Router)
    - Cisco CSR1000v (Router)
    - Cisco IOSvL2 (Switch)
-   - Juniper vQFX (Switch) - NEW!
+   - Juniper vQFX (Switch)
 5. Click "Create Device"
 6. Wait for boot, then click "Console" to access CLI
+
+### Create Your First Network Links ⭐ NEW!
+
+**Via Web Interface (Click-to-Connect):**
+1. Go to the **Network Topology** section
+2. Click the **"🔗 Connect Routers"** button
+3. Click your **first device** (e.g., vSRX1)
+4. Click your **second device** (e.g., vQFX1)
+5. Enter **source interface** (e.g., `ge-0/0/1` for vSRX)
+6. Enter **target interface** (e.g., `xe-0/0/1` for vQFX)
+7. Link appears immediately with status:
+   - **Green solid line** = Both devices running (UP)
+   - **Red dashed line** = One or both devices stopped (DOWN)
+
+**Configure Interfaces on Devices:**
+```bash
+# On vSRX1 (Juniper)
+configure
+set interfaces ge-0/0/1 unit 0 family inet address 10.0.0.1/24
+set security zones security-zone trust interfaces ge-0/0/1.0
+set security zones security-zone trust host-inbound-traffic system-services ping
+commit and-quit
+
+# On vQFX1 (Juniper Switch)
+configure
+set interfaces xe-0/0/1 unit 0 family inet address 10.0.0.2/24
+commit and-quit
+
+# Test connectivity
+ping 10.0.0.2 count 5
+```
+
+**Link Features:**
+- Real-time status updates (auto-refresh every 5 seconds)
+- Interface-level details (see exact ports connected)
+- Click links to see connection details
+- Drag nodes to rearrange topology
+- Multiple layout options (Circle, Grid, Custom)
+- Position persistence (saves your layout)
 
 ---
 
@@ -486,52 +543,59 @@ tailscale ip -4
 
 ## 🏗️ Architecture
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Web Browser (Port 3000)                     │
-│                                                                   │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  Dashboard   │  │   Topology   │  │   Console (ttyd)     │  │
-│  │   (React)    │  │ (Cytoscape)  │  │   Dynamic ports      │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────────────┘  │
-└─────────┼──────────────────┼──────────────────┼───────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                      Web Browser (Port 3000)                       │
+│                                                                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐  │
+│  │  Dashboard   │  │   Topology   │  │   Console (ttyd)       │  │
+│  │   (React)    │  │ (Cytoscape)  │  │   Dynamic ports        │  │
+│  │              │  │ + Links      │  │   (10min timeout)      │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬─────────────────┘  │
+└─────────┼──────────────────┼──────────────────┼─────────────────────┘
           │                  │                  │
           │         HTTP/REST API + WebSocket   │
           ▼                  ▼                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              FastAPI Backend (Port 8000)                         │
-│                                                                   │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  RouterService  │  LabService   │  ConsoleService (ttyd)  │  │
-│  │  StatsService   │  TopologyService  │  (10min timeout)   │  │
-│  └──────────┬──────────────┬──────────────┬──────────────────┘  │
-└─────────────┼───────────────┼──────────────┼─────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│              FastAPI Backend (Port 8000)                           │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │  RouterService  │  LabService   │  ConsoleService (ttyd)    │  │
+│  │  StatsService   │  TopologyService  │  LinkService (NEW!)  │  │
+│  │  (Multi-vendor) │  (JSON persist)   │  (Status tracking)   │  │
+│  └──────────┬──────────────┬──────────────┬────────────────────┘  │
+└─────────────┼───────────────┼──────────────┼──────────────────────┘
               │               │              │
               ▼               ▼              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    libvirt / KVM Layer                           │
-│                                                                   │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Virtual Network (br0 bridge - 10.10.50.0/24)              │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                   │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │
-│  │ Juniper  │  │ Juniper  │  │  Cisco   │  │    Cisco     │    │
-│  │  vSRX-1  │  │  vSRX-2  │  │ CSR1000v │  │   IOSvL2-1   │    │
-│  │ (Router) │  │ (Router) │  │ (Router) │  │   (Switch)   │    │
-│  │ 4GB/2C   │  │ 4GB/2C   │  │ 4GB/2C   │  │   2GB/2C     │    │
-│  │ ~90sec   │  │ ~90sec   │  │ ~3-5min  │  │   ~2-3min    │    │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘    │
-│                                                                   │
-│  ┌─────────────────────────────────────────────────────┐        │
-│  │           Juniper vQFX-1 (Switch)                   │        │
-│  │  ┌──────────────┐          ┌──────────────┐        │        │
-│  │  │  vQFX1-RE    │◄────────►│  vQFX1-PFE   │        │        │
-│  │  │   (Mgmt)     │ Internal │  (Forwarding)│        │        │
-│  │  │   2GB/2C     │  Network │    2GB/2C    │        │        │
-│  │  └──────────────┘          └──────────────┘        │        │
-│  │         12x 10GbE ports • ~7-10min boot             │        │
-│  └─────────────────────────────────────────────────────┘        │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                    libvirt / KVM Layer                             │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │  Virtual Network (br0 bridge - 10.10.50.0/24)                │ │
+│  │              + Network Links (managed by LinkService)        │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────────┐    │
+│  │ Juniper  │  │ Juniper  │  │  Cisco   │  │    Cisco       │    │
+│  │  vSRX-1  │──│  vQFX-1  │  │ CSR1000v │  │   IOSvL2-1     │    │
+│  │ (Router) │  │ (Switch) │  │ (Router) │  │   (Switch)     │    │
+│  │ 4GB/2C   │  │ 4GB/2C   │  │ 4GB/2C   │  │   2GB/2C       │    │
+│  │ ~90sec   │  │ ~7-10min │  │ ~3-5min  │  │   ~2-3min      │    │
+│  └────┬─────┘  └────┬─────┘  └──────────┘  └────────────────┘    │
+│       │             │                                              │
+│       └─────────────┘                                              │
+│      ge-0/0/1 ↔ xe-0/0/1                                          │
+│      (Link tracked by backend)                                     │
+│                                                                     │
+│  ┌───────────────────────────────────────────────────────┐        │
+│  │           Juniper vQFX-1 (Switch)                     │        │
+│  │  ┌──────────────┐          ┌──────────────┐          │        │
+│  │  │  vQFX1-RE    │◄────────►│  vQFX1-PFE   │          │        │
+│  │  │   (Mgmt)     │ Internal │  (Forwarding)│          │        │
+│  │  │   2GB/2C     │  Network │    2GB/2C    │          │        │
+│  │  └──────────────┘          └──────────────┘          │        │
+│  │         12x 10GbE ports • ~7-10min boot               │        │
+│  └───────────────────────────────────────────────────────┘        │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -542,24 +606,26 @@ vrhost-lab/
 ├── backend/                    # FastAPI backend
 │   ├── main.py                # Main application entry
 │   ├── models/                # Pydantic data models
-│   │   ├── router.py          # Router/Switch model with multi-vendor support
+│   │   ├── router.py          # Router/Switch model with interfaces
 │   │   ├── lab.py             # Lab model
+│   │   ├── link.py            # Link model (NEW!)
 │   │   └── topology.py        # Topology model
 │   └── services/              # Business logic
-│       ├── router_service.py  # Multi-vendor device management (vQFX support)
+│       ├── router_service.py  # Multi-vendor device management
 │       ├── lab_service.py     # Lab management
 │       ├── stats_service.py   # System statistics
-│       └── console_service.py # Web console (ttyd, 10min timeout, vQFX RE detection)
+│       ├── link_service.py    # Link management (NEW!)
+│       └── console_service.py # Web console (ttyd)
 │
 ├── frontend/                   # React frontend
 │   ├── src/
-│   │   ├── App.js             # Main component with 4-vendor support
-│   │   ├── Topology.js        # Cytoscape topology with vendor badges & status
+│   │   ├── App.js             # Main component with links
+│   │   ├── Topology.js        # Cytoscape topology (NEW!)
 │   │   └── services/
 │   │       └── api.js         # API client
 │   ├── public/
 │   ├── tailwind.config.js     # Dark theme configuration
-│   └── package.json
+│   └── package.json           # Dependencies (includes cytoscape)
 │
 ├── scripts/                    # Automation scripts
 │   ├── mkjuniper              # Create Juniper vSRX router
@@ -569,6 +635,9 @@ vrhost-lab/
 │   ├── mkvqfx-delete          # Delete Juniper vQFX switch (both VMs)
 │   ├── mkvm                   # Generic VM creation utility
 │   └── README.md              # Scripts documentation
+│
+├── data/                       # Data persistence (NEW!)
+│   └── links.json             # Network links storage
 │
 ├── docs/                       # Documentation
 │   └── ROUTER_SETUP.md        # Router configuration guide
@@ -596,7 +665,7 @@ vrhost-lab/
 - ✅ Juniper vSRX full support (production)
 - ✅ Cisco CSR1000v full support (production)
 - ✅ Cisco IOSvL2 switch support (production)
-- ✅ Juniper vQFX switch support (production) - **NEW!**
+- ✅ Juniper vQFX switch support (production)
 - ✅ Backend multi-vendor device detection
 - ✅ Frontend vendor badges (blue=Cisco, green=Juniper)
 - ✅ Automated provisioning scripts for all platforms
@@ -605,28 +674,44 @@ vrhost-lab/
 - ✅ vQFX dual-VM architecture (RE + PFE) with unified management
 - ✅ Session management with automatic cleanup (10 min timeout)
 
-### 🚀 Phase 3: Additional Platforms (Future)
+### ✅ Phase 3: Visual Topology & Link Management (Complete) ⭐ NEW!
+- ✅ Interactive network topology visualization
+- ✅ Visual link creation (click-to-connect)
+- ✅ Real-time link status (green=up, red=down)
+- ✅ Interface-level link details
+- ✅ Backend link management service
+- ✅ Link persistence to JSON storage
+- ✅ Automatic link status updates
+- ✅ Link cleanup on router deletion
+- ✅ Drag-and-drop node positioning
+- ✅ Multiple layout options (circle, grid, custom)
+- ✅ Position persistence across sessions
+
+### 🚀 Phase 4: Additional Platforms (Future)
 - 🔜 Arista vEOS router/switch
 - 🔜 VyOS router support
 - 🔜 Cisco Nexus 9000v (data center)
 
-### 🚀 Phase 4: Advanced Features (Planned)
+### 🚀 Phase 5: Advanced Features (Planned)
+- 🔜 Link deletion from UI
+- 🔜 Link editing (change interfaces)
 - 🔜 Device snapshots and cloning
 - 🔜 Configuration backup/restore automation
-- 🔜 Lab templates (save/load full topologies)
+- 🔜 Lab templates (save/load full topologies with links)
 - 🔜 Network diagram export (PNG/SVG)
 - 🔜 Automated lab provisioning from YAML
 - 🔜 Configuration versioning with Git integration
 - 🔜 Bulk device operations
+- 🔜 LLDP/CDP discovery for auto-link creation
 
-### 🌟 Phase 5: Platform Enhancement (Future)
+### 🌟 Phase 6: Platform Enhancement (Future)
 - 🔜 User authentication (JWT-based)
 - 🔜 Multi-user support with isolation
 - 🔜 Role-based access control (RBAC)
 - 🔜 Centralized logging (Graylog)
 - 🔜 Metrics dashboard (Prometheus/Grafana)
 - 🔜 API rate limiting
-- 🔜 WebSocket for real-time updates
+- 🔜 WebSocket for real-time topology updates
 - 🔜 Email notifications for lab events
 
 ---
@@ -639,6 +724,7 @@ vrhost-lab/
 - 🔧 **Development** - Network automation development with Ansible/Python
 - 📊 **Research** - Network behavior analysis, performance testing
 - 💼 **Professional** - Pre-production testing, change validation, data center switching
+- 🌐 **Topology Design** - Visual network planning and documentation
 
 ---
 
@@ -702,6 +788,37 @@ sudo systemctl restart vrhost-web
 # Clear browser cache (Ctrl+Shift+R)
 ```
 
+### Links Not Showing or Incorrect Status
+```bash
+# Check links.json
+cat /opt/vrhost-lab/data/links.json
+
+# Check link service logs
+sudo journalctl -u vrhost-api -f | grep -i link
+
+# Verify both routers are running
+virsh list --all
+
+# Delete and recreate link via UI
+# Or manually edit links.json and restart API
+sudo systemctl restart vrhost-api
+```
+
+### Topology Not Rendering
+```bash
+# Check browser console (F12)
+# Look for Cytoscape errors
+
+# Verify cytoscape is installed
+cd /opt/vrhost-lab/frontend
+npm list cytoscape
+
+# Reinstall frontend dependencies
+npm install
+npm run build
+sudo systemctl restart vrhost-web
+```
+
 ### Image Boot Issues
 
 **Juniper vSRX:**
@@ -722,7 +839,7 @@ sudo systemctl restart vrhost-web
 - Shows 16 ports: Gi0/0 through Gi3/3
 - Some error messages during boot are normal (NVRAM warnings)
 
-**Juniper vQFX:** (NEW!)
+**Juniper vQFX:**
 - Verify BOTH image paths in `/usr/local/bin/mkvqfx` (RE and PFE)
 - Boot time: ~7-10 minutes (dual-VM architecture)
 - Check both VMs: `virsh list | grep <name>`
@@ -748,6 +865,11 @@ virsh domiflist device-name
 
 # For vQFX, check internal network
 virsh net-list --all
+
+# Verify security zones (Juniper vSRX)
+# On vSRX:
+show security zones
+show security policies
 ```
 
 **For more help**, open an issue on [GitHub Issues](https://github.com/Dubzyy/vrhost-lab/issues).
@@ -794,9 +916,16 @@ sudo mkcsr1000v test-csr1
 sudo mkviosl2 test-sw1
 sudo mkvqfx test-sw2
 
+# Test link creation via UI
+# 1. Create two devices
+# 2. Click "Connect Routers"
+# 3. Select both devices
+# 4. Enter interface names
+
 # Test API endpoints
 curl http://localhost:8000/api/health
 curl http://localhost:8000/api/routers
+curl http://localhost:8000/api/links
 
 # Check logs
 sudo journalctl -u vrhost-api -f
@@ -827,7 +956,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Powered by**:
   - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
   - [React](https://reactjs.org/) - UI library for building user interfaces
-  - [Cytoscape.js](https://js.cytoscape.org/) - Graph visualization and analysis
+  - [Cytoscape.js](https://js.cytoscape.org/) - Graph visualization and analysis ⭐
   - [ttyd](https://github.com/tsl0922/ttyd) - Share your terminal over the web
   - [libvirt](https://libvirt.org/) - Virtualization API and management
   - [KVM](https://www.linux-kvm.org/) - Kernel-based Virtual Machine
@@ -871,5 +1000,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **VRHost Lab** - Your gateway to mastering network engineering
 
 *Making network labs accessible, modern, and enjoyable*
+
+**Latest Release: v0.2.0 - Visual Network Topology** 🎉
 
 </div>
