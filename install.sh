@@ -114,7 +114,7 @@ cd "$INSTALL_DIR"
 # Install automation scripts
 print_status "Installing automation scripts..."
 if [ -d "$INSTALL_DIR/scripts" ]; then
-    # Install mkjuniper
+    # Install mkjuniper (vSRX routers)
     if [ -f "$INSTALL_DIR/scripts/mkjuniper" ]; then
         cp "$INSTALL_DIR/scripts/mkjuniper" /usr/local/bin/
         chmod +x /usr/local/bin/mkjuniper
@@ -122,8 +122,8 @@ if [ -d "$INSTALL_DIR/scripts" ]; then
     else
         print_warning "mkjuniper script not found in scripts/ directory"
     fi
-    
-    # Install mkcsr1000v
+
+    # Install mkcsr1000v (Cisco routers)
     if [ -f "$INSTALL_DIR/scripts/mkcsr1000v" ]; then
         cp "$INSTALL_DIR/scripts/mkcsr1000v" /usr/local/bin/
         chmod +x /usr/local/bin/mkcsr1000v
@@ -131,8 +131,8 @@ if [ -d "$INSTALL_DIR/scripts" ]; then
     else
         print_warning "mkcsr1000v script not found in scripts/ directory"
     fi
-    
-    # Install mkviosl2
+
+    # Install mkviosl2 (Cisco IOSvL2 switches)
     if [ -f "$INSTALL_DIR/scripts/mkviosl2" ]; then
         cp "$INSTALL_DIR/scripts/mkviosl2" /usr/local/bin/
         chmod +x /usr/local/bin/mkviosl2
@@ -140,7 +140,25 @@ if [ -d "$INSTALL_DIR/scripts" ]; then
     else
         print_warning "mkviosl2 script not found in scripts/ directory"
     fi
-    
+
+    # Install mkvqfx (Juniper vQFX switches)
+    if [ -f "$INSTALL_DIR/scripts/mkvqfx" ]; then
+        cp "$INSTALL_DIR/scripts/mkvqfx" /usr/local/bin/
+        chmod +x /usr/local/bin/mkvqfx
+        print_success "mkvqfx script installed"
+    else
+        print_warning "mkvqfx-delete script not found in scripts/ directory"
+    fi
+
+    # Install mkvqfx-delete (vQFX cleanup)
+    if [ -f "$INSTALL_DIR/scripts/mkvqfx-delete" ]; then
+        cp "$INSTALL_DIR/scripts/mkvqfx-delete" /usr/local/bin/
+        chmod +x /usr/local/bin/mkvqfx-delete
+        print_success "mkvqfx-delete script installed"
+    else
+        print_warning "mkvqfx-delete script not found in scripts/ directory"
+    fi
+
     # Install mkvm (generic)
     if [ -f "$INSTALL_DIR/scripts/mkvm" ]; then
         cp "$INSTALL_DIR/scripts/mkvm" /usr/local/bin/
@@ -153,13 +171,13 @@ fi
 
 # Setup Python virtual environment for backend
 print_status "Setting up Python virtual environment..."
-cd "$INSTALL_DIR/backend"
+cd "$INSTALL_DIR"
 python3 -m venv venv
 source venv/bin/activate
 
 print_status "Installing Python dependencies..."
 pip install --quiet --upgrade pip
-pip install --quiet -r requirements.txt
+pip install --quiet -r backend/requirements.txt
 deactivate
 print_success "Python backend dependencies installed"
 
@@ -181,8 +199,8 @@ After=network.target libvirtd.service
 Type=simple
 User=root
 WorkingDirectory=/opt/vrhost-lab/backend
-Environment="PATH=/opt/vrhost-lab/backend/venv/bin"
-ExecStart=/opt/vrhost-lab/backend/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
+Environment="PATH=/opt/vrhost-lab/venv/bin"
+ExecStart=/opt/vrhost-lab/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=10
 
@@ -248,22 +266,32 @@ echo -e "  Web Interface: ${GREEN}http://${SERVER_IP}:3000${NC}"
 echo -e "  API Docs:      ${GREEN}http://${SERVER_IP}:8000/docs${NC}"
 echo ""
 echo -e "${BLUE}Installed Scripts:${NC}"
-echo -e "  ${GREEN}mkjuniper${NC}   - Create Juniper vSRX router"
-echo -e "  ${GREEN}mkcsr1000v${NC}  - Create Cisco CSR1000v router"
-echo -e "  ${GREEN}mkviosl2${NC}    - Create Cisco IOSvL2 switch"
+echo -e "  ${GREEN}mkjuniper${NC}      - Create Juniper vSRX router"
+echo -e "  ${GREEN}mkcsr1000v${NC}     - Create Cisco CSR1000v router"
+echo -e "  ${GREEN}mkviosl2${NC}       - Create Cisco IOSvL2 switch"
+echo -e "  ${GREEN}mkvqfx${NC}         - Create Juniper vQFX switch"
+echo -e "  ${GREEN}mkvqfx-delete${NC}  - Delete Juniper vQFX switch"
 echo ""
 echo -e "${YELLOW}Next Steps:${NC}"
 echo -e "  1. Add router/switch images to /var/lib/libvirt/images/"
-echo -e "     - Juniper: /var/lib/libvirt/images/juniper/"
-echo -e "     - Cisco:   /var/lib/libvirt/images/cisco/"
-echo -e "  2. Update image paths in scripts:"
+echo -e "     - Juniper vSRX:  /var/lib/libvirt/images/juniper/"
+echo -e "     - Juniper vQFX:  /var/lib/libvirt/images/juniper/"
+echo -e "     - Cisco routers: /var/lib/libvirt/images/cisco/"
+echo -e "     - Cisco switches: /var/lib/libvirt/images/cisco/"
+echo -e "  2. Update image paths in scripts if needed:"
 echo -e "     - ${GREEN}sudo nano /usr/local/bin/mkjuniper${NC}"
 echo -e "     - ${GREEN}sudo nano /usr/local/bin/mkcsr1000v${NC}"
 echo -e "     - ${GREEN}sudo nano /usr/local/bin/mkviosl2${NC}"
+echo -e "     - ${GREEN}sudo nano /usr/local/bin/mkvqfx${NC}"
 echo -e "  3. Create your first device:"
-echo -e "     - ${GREEN}sudo mkjuniper r1${NC}      (Juniper router)"
-echo -e "     - ${GREEN}sudo mkcsr1000v csr1${NC}   (Cisco router)"
-echo -e "     - ${GREEN}sudo mkviosl2 sw1${NC}      (Cisco switch)"
+echo -e "     - ${GREEN}sudo mkjuniper r1 10.10.50.10${NC}  (Juniper vSRX router)"
+echo -e "     - ${GREEN}sudo mkcsr1000v csr1${NC}           (Cisco CSR1000v router)"
+echo -e "     - ${GREEN}sudo mkviosl2 sw1${NC}              (Cisco IOSvL2 switch)"
+echo -e "     - ${GREEN}sudo mkvqfx sw2${NC}                (Juniper vQFX switch)"
+echo ""
+echo -e "${BLUE}Device Support:${NC}"
+echo -e "  Routers:  ${GREEN}Juniper vSRX • Cisco CSR1000v${NC}"
+echo -e "  Switches: ${GREEN}Cisco IOSvL2 • Juniper vQFX${NC}"
 echo ""
 echo -e "${BLUE}Service Management:${NC}"
 echo -e "  Status:  ${GREEN}sudo systemctl status vrhost-api vrhost-web${NC}"

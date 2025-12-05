@@ -1,640 +1,381 @@
 import React, { useState, useEffect } from 'react';
-import { routerAPI, statsAPI, labAPI, consoleAPI } from './services/api';
+import axios from 'axios';
 import Topology from './Topology';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://10.10.50.1:8000';
+
 function App() {
-  const [labs, setLabs] = useState([]);
-  const [selectedLab, setSelectedLab] = useState(null);
   const [routers, setRouters] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showNewLabModal, setShowNewLabModal] = useState(false);
-  const [showNewRouterModal, setShowNewRouterModal] = useState(false);
-  const [currentView, setCurrentView] = useState('list'); // 'list' or 'topology'
-
-  // New Lab form
-  const [newLabName, setNewLabName] = useState('');
-  const [newLabDesc, setNewLabDesc] = useState('');
-
-  // New Router form
+  const [stats, setStats] = useState({});
   const [newRouterName, setNewRouterName] = useState('');
   const [newRouterIP, setNewRouterIP] = useState('');
   const [newRouterType, setNewRouterType] = useState('juniper');
-  const [newRouterRAM, setNewRouterRAM] = useState(4);
-  const [newRouterCPUs, setNewRouterCPUs] = useState(2);
-  const [routerCreating, setRouterCreating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000);
+    fetchRouters();
+    fetchStats();
+    const interval = setInterval(() => {
+      fetchRouters();
+      fetchStats();
+    }, 5000);
     return () => clearInterval(interval);
-  }, [selectedLab]);
+  }, []);
 
-  const loadData = async () => {
+  const fetchRouters = async () => {
     try {
-      const [labsRes, statsRes] = await Promise.all([
-        labAPI.list(),
-        statsAPI.system()
-      ]);
-
-      setLabs(labsRes.data);
-      setStats(statsRes.data);
-
-      if (selectedLab) {
-        const routersRes = await labAPI.routers(selectedLab);
-        setRouters(routersRes.data.routers);
-      } else {
-        const allRoutersRes = await routerAPI.list();
-        setRouters(allRoutersRes.data.routers);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading data:', error);
+      const response = await axios.get(`${API_BASE}/api/routers`);
+      setRouters(response.data.routers || response.data);
+    } catch (err) {
+      console.error('Failed to fetch devices:', err);
     }
   };
 
-  const createLab = async () => {
-    if (!newLabName) return;
+  const fetchStats = async () => {
     try {
-      await labAPI.create({ name: newLabName, description: newLabDesc });
-      setShowNewLabModal(false);
-      setNewLabName('');
-      setNewLabDesc('');
-      loadData();
-    } catch (error) {
-      alert('Failed to create lab: ' + error.message);
+      const response = await axios.get(`${API_BASE}/api/stats`);
+      setStats(response.data);
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
     }
   };
 
   const createRouter = async () => {
-    if (!newRouterName || !newRouterIP) {
-      alert('Please fill in device name and IP address');
+    if (!newRouterName.trim()) {
+      setError('Device name is required');
       return;
     }
 
-    setRouterCreating(true);
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
     try {
-      await routerAPI.create({
+      await axios.post(`${API_BASE}/api/routers`, {
         name: newRouterName,
-        ip: newRouterIP,
-        router_type: newRouterType,
-        ram_gb: newRouterRAM,
-        vcpus: newRouterCPUs
+        ip: newRouterIP || null,
+        router_type: newRouterType
       });
 
-      setShowNewRouterModal(false);
+      setSuccess(`Device ${newRouterName} created successfully!`);
       setNewRouterName('');
       setNewRouterIP('');
-      setNewRouterType('juniper');
-      setNewRouterRAM(4);
-      setNewRouterCPUs(2);
-      loadData();
+      fetchRouters();
 
-      const bootTimeMap = {
-        'cisco': '3-5 minutes',
-        'cisco-switch': '2-3 minutes',
-        'juniper': '90 seconds',
-        'juniper-switch': '3-4 minutes'
-      };
-      const bootTime = bootTimeMap[newRouterType] || '2-3 minutes';
-      alert(`Device created successfully! Boot time: ~${bootTime}`);
-    } catch (error) {
-      alert('Failed to create device: ' + (error.response?.data?.detail || error.message));
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create device');
     } finally {
-      setRouterCreating(false);
+      setLoading(false);
     }
   };
 
-  const startLab = async (labName) => {
+  const deleteRouter = async (name) => {
+    if (!window.confirm(`Are you sure you want to delete ${name}?`)) return;
+
     try {
-      await labAPI.start(labName);
-      loadData();
-    } catch (error) {
-      alert('Failed to start lab: ' + error.message);
+      await axios.delete(`${API_BASE}/api/routers/${name}`);
+      setSuccess(`Device ${name} deleted`);
+      fetchRouters();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete device');
     }
   };
 
-  const stopLab = async (labName) => {
+  const startRouter = async (name) => {
     try {
-      await labAPI.stop(labName);
-      loadData();
-    } catch (error) {
-      alert('Failed to stop lab: ' + error.message);
+      await axios.post(`${API_BASE}/api/routers/${name}/start`);
+      fetchRouters();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to start device');
     }
   };
 
-  const deleteLab = async (labName) => {
-    if (!window.confirm(`Delete lab ${labName}? (Devices will not be deleted)`)) return;
+  const stopRouter = async (name) => {
     try {
-      await labAPI.delete(labName);
-      if (selectedLab === labName) setSelectedLab(null);
-      loadData();
-    } catch (error) {
-      alert('Failed to delete lab: ' + error.message);
+      await axios.post(`${API_BASE}/api/routers/${name}/stop`);
+      fetchRouters();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to stop device');
     }
   };
 
-  const handleStart = async (name) => {
+  const restartRouter = async (name) => {
     try {
-      // Optimistically update UI
-      setRouters(routers.map(r =>
-        r.name === name ? { ...r, state: 'starting' } : r
-      ));
-
-      await routerAPI.start(name);
-
-      // Refresh after 1 second to get actual state
-      setTimeout(loadData, 1000);
-    } catch (error) {
-      alert('Failed to start device: ' + error.message);
-      loadData(); // Reload on error
+      await axios.post(`${API_BASE}/api/routers/${name}/restart`);
+      fetchRouters();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to restart device');
     }
   };
 
-  const handleStop = async (name) => {
+  const openConsole = async (name) => {
     try {
-      // Optimistically update UI
-      setRouters(routers.map(r =>
-        r.name === name ? { ...r, state: 'stopping' } : r
-      ));
+      // Always create a fresh console session
+      const response = await axios.post(`${API_BASE}/api/routers/${name}/console/session`);
 
-      await routerAPI.stop(name);
+      if (response.data.success) {
+        const { port } = response.data;
+        const consoleUrl = `http://10.10.50.1:${port}`;
 
-      // Refresh after 1 second to get actual state
-      setTimeout(loadData, 1000);
-    } catch (error) {
-      alert('Failed to stop device: ' + error.message);
-      loadData(); // Reload on error
-    }
-  };
-
-  const handleDelete = async (name) => {
-    if (!window.confirm(`Delete device ${name}?`)) return;
-    try {
-      await routerAPI.delete(name);
-      loadData();
-    } catch (error) {
-      alert('Failed to delete device: ' + error.message);
-    }
-  };
-
-  const handleConsole = async (name) => {
-    try {
-      const response = await consoleAPI.createSession(name);
-      const { port } = response.data;
-
-      // Use current hostname, but replace localhost with actual IP
-      let consoleHost = window.location.hostname;
-      if (consoleHost === 'localhost' || consoleHost === '127.0.0.1') {
-        consoleHost = '10.10.50.1';
+        // Open in new tab
+        window.open(consoleUrl, '_blank', 'width=1024,height=768');
       }
-
-      const consoleUrl = `http://${consoleHost}:${port}`;
-      console.log('Opening console:', consoleUrl);
-
-      window.open(consoleUrl, `console-${name}`, 'width=1200,height=800');
-    } catch (error) {
-      console.error('Failed to open console:', error);
-      alert('Failed to open console: ' + error.message);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to open console');
     }
   };
 
-  // Helper function to get state badge styling
-  const getStateBadgeClass = (state) => {
-    switch(state) {
-      case 'running':
-        return 'bg-green-500/20 text-green-400';
-      case 'starting':
-        return 'bg-blue-500/20 text-blue-400 animate-pulse';
-      case 'stopping':
-        return 'bg-yellow-500/20 text-yellow-400 animate-pulse';
-      case 'shut off':
-      case 'shutoff':
-        return 'bg-gray-500/20 text-gray-400';
-      default:
-        return 'bg-gray-500/20 text-gray-400';
+  const getStateColor = (state) => {
+    switch (state) {
+      case 'running': return 'bg-green-500';
+      case 'shutoff': return 'bg-gray-500';
+      case 'paused': return 'bg-yellow-500';
+      case 'partial': return 'bg-orange-500';
+      default: return 'bg-gray-400';
     }
   };
 
-  // Helper function to get router/switch type badge styling
   const getRouterTypeBadge = (routerType) => {
     if (routerType === 'cisco') {
-      return { class: 'bg-blue-600 text-white', label: 'Cisco Router' };
+      return { class: 'bg-blue-600', label: 'Cisco Router' };
     } else if (routerType === 'cisco-switch') {
-      return { class: 'bg-blue-500 text-white', label: 'Cisco Switch' };
+      return { class: 'bg-blue-500', label: 'Cisco Switch' };
     } else if (routerType === 'juniper-switch') {
-      return { class: 'bg-green-500 text-white', label: 'Juniper Switch' };
+      return { class: 'bg-green-500', label: 'Juniper Switch' };
     }
-    return { class: 'bg-green-600 text-white', label: 'Juniper Router' };
+    return { class: 'bg-green-600', label: 'Juniper Router' };
   };
 
-  // Helper function to get device description
   const getDeviceDescription = (routerType) => {
     const descriptions = {
       'juniper': '🟢 Juniper vSRX - 4GB RAM, 2 vCPU, ~90 sec boot',
       'cisco': '🔷 Cisco CSR1000v - 4GB RAM, 2 vCPU, ~3-5 min boot',
       'cisco-switch': '🔹 Cisco IOSvL2 - 2GB RAM, 2 vCPU, ~2-3 min boot, 16 ports',
-      'juniper-switch': '🟩 Juniper vQFX - 4GB RAM, 2 vCPU, ~3-4 min boot (Coming Soon)'
+      'juniper-switch': '🟩 Juniper vQFX - 4GB RAM, 2 vCPU, ~7-10 min boot, 12x 10GbE ports'
     };
     return descriptions[routerType] || '';
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-vrhost-darker flex items-center justify-center">
-        <div className="text-2xl text-vrhost-primary">Loading VRHost Lab...</div>
-      </div>
-    );
-  }
+  const getBootTimeWarning = (routerType) => {
+    const warnings = {
+      'cisco': '⚠️ First boot takes 3-5 minutes',
+      'cisco-switch': '⚠️ Boot takes 2-3 minutes',
+      'juniper-switch': '⚠️ Boot takes 7-10 minutes (2 VMs: RE + PFE)'
+    };
+    return warnings[routerType];
+  };
 
   return (
-    <div className="min-h-screen bg-vrhost-darker">
-      <header className="bg-vrhost-dark border-b border-gray-700 shadow-lg">
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+      {/* Header */}
+      <header className="bg-gray-800 border-b border-gray-700 shadow-lg">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-vrhost-primary">VRHost Lab</h1>
-              <p className="text-gray-400 text-sm">Multi-vendor network lab platform</p>
+              <h1 className="text-3xl font-bold text-white">VRHost Lab 🚀</h1>
+              <p className="text-gray-400 text-sm mt-1">Multi-Vendor Network Lab Platform</p>
             </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowNewLabModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-              >
-                + New Lab
-              </button>
-              <button
-                onClick={() => setShowNewRouterModal(true)}
-                className="bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-              >
-                + New Device
-              </button>
+            <div className="flex gap-6 text-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">{stats.running_routers || 0}</div>
+                <div className="text-gray-400">Running</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-400">{stats.total_routers || 0}</div>
+                <div className="text-gray-400">Total Devices</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-400">{stats.cpu_percent?.toFixed(1) || 0}%</div>
+                <div className="text-gray-400">CPU</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-400">{stats.memory_percent?.toFixed(1) || 0}%</div>
+                <div className="text-gray-400">Memory</div>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-vrhost-dark p-6 rounded-lg border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Total Labs</div>
-              <div className="text-3xl font-bold text-white">{labs.length}</div>
-            </div>
-            <div className="bg-vrhost-dark p-6 rounded-lg border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Total Devices</div>
-              <div className="text-3xl font-bold text-vrhost-primary">{stats.vms.running} / {stats.vms.total}</div>
-            </div>
-            <div className="bg-vrhost-dark p-6 rounded-lg border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Memory Used</div>
-              <div className="text-3xl font-bold text-white">{stats.resources.memory_used_mb} MB</div>
-              <div className="text-xs text-gray-400 mt-1">
-                {stats.resources.memory_available_mb} MB available
-              </div>
-            </div>
-            <div className="bg-vrhost-dark p-6 rounded-lg border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Disk Usage</div>
-              <div className="text-3xl font-bold text-white">{stats.disk.used_percent}%</div>
-              <div className="text-xs text-gray-400 mt-1">
-                {stats.disk.used_gb} GB / {stats.disk.total_gb} GB
-              </div>
-            </div>
+        {/* Alerts */}
+        {error && (
+          <div className="mb-6 bg-red-900 border border-red-700 text-red-100 px-4 py-3 rounded">
+            {error}
+            <button onClick={() => setError('')} className="float-right font-bold">×</button>
+          </div>
+        )}
+        {success && (
+          <div className="mb-6 bg-green-900 border border-green-700 text-green-100 px-4 py-3 rounded">
+            {success}
+            <button onClick={() => setSuccess('')} className="float-right font-bold">×</button>
           </div>
         )}
 
-        {/* View Switcher */}
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setCurrentView('list')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              currentView === 'list'
-                ? 'bg-vrhost-primary text-white'
-                : 'bg-vrhost-dark text-gray-400 hover:text-white border border-gray-700'
-            }`}
-          >
-            📋 List View
-          </button>
-          <button
-            onClick={() => setCurrentView('topology')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              currentView === 'topology'
-                ? 'bg-vrhost-primary text-white'
-                : 'bg-vrhost-dark text-gray-400 hover:text-white border border-gray-700'
-            }`}
-          >
-            🌐 Topology View
-          </button>
+        {/* Create Device Form */}
+        <div className="bg-gray-800 rounded-lg shadow-xl p-6 mb-8 border border-gray-700">
+          <h2 className="text-2xl font-bold mb-4 text-white">Create New Device</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input
+              type="text"
+              placeholder="Device Name (e.g., r1, sw1)"
+              value={newRouterName}
+              onChange={(e) => setNewRouterName(e.target.value)}
+              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="IP Address (optional)"
+              value={newRouterIP}
+              onChange={(e) => setNewRouterIP(e.target.value)}
+              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+            <select
+              value={newRouterType}
+              onChange={(e) => setNewRouterType(e.target.value)}
+              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+            >
+              <optgroup label="Routers">
+                <option value="juniper">Juniper vSRX</option>
+                <option value="cisco">Cisco CSR1000v</option>
+              </optgroup>
+              <optgroup label="Switches">
+                <option value="cisco-switch">Cisco IOSvL2</option>
+                <option value="juniper-switch">Juniper vQFX</option>
+              </optgroup>
+            </select>
+            <button
+              onClick={createRouter}
+              disabled={loading}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded disabled:bg-gray-600 transition-colors"
+            >
+              {loading ? 'Creating...' : '+ New Device'}
+            </button>
+          </div>
+
+          {/* Device Type Description */}
+          {newRouterType && (
+            <div className="mt-4 p-3 bg-gray-700 rounded border border-gray-600">
+              <p className="text-sm text-gray-300">{getDeviceDescription(newRouterType)}</p>
+              {getBootTimeWarning(newRouterType) && (
+                <p className="text-sm text-yellow-400 mt-1">{getBootTimeWarning(newRouterType)}</p>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* List View */}
-        {currentView === 'list' && (
-          <>
-            <div className="bg-vrhost-dark rounded-lg border border-gray-700 overflow-hidden mb-8">
-              <div className="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-white">Labs</h2>
-                <button
-                  onClick={() => setSelectedLab(null)}
-                  className={`px-4 py-2 rounded text-sm font-semibold transition-colors ${
-                    !selectedLab ? 'bg-vrhost-primary text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  All Devices
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-                {labs.map((lab) => (
-                  <div
-                    key={lab.name}
-                    className={`bg-vrhost-darker p-6 rounded-lg border transition-colors cursor-pointer ${
-                      selectedLab === lab.name ? 'border-vrhost-primary' : 'border-gray-700 hover:border-gray-600'
-                    }`}
-                    onClick={() => setSelectedLab(lab.name)}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white">{lab.name}</h3>
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-vrhost-primary/20 text-vrhost-primary">
-                        {lab.running_count}/{lab.router_count}
-                      </span>
-                    </div>
-                    <p className="text-gray-400 text-sm mb-4">{lab.description || 'No description'}</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); startLab(lab.name); }}
-                        className="flex-1 bg-vrhost-primary/20 hover:bg-vrhost-primary/30 text-vrhost-primary px-4 py-2 rounded text-sm font-semibold transition-colors"
-                      >
-                        Start All
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); stopLab(lab.name); }}
-                        className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded text-sm font-semibold transition-colors"
-                      >
-                        Stop All
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteLab(lab.name); }}
-                        className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Topology Visualization */}
+        <div className="bg-gray-800 rounded-lg shadow-xl mb-8 border border-gray-700" style={{ height: '600px' }}>
+          <div className="p-6 pb-0">
+            <h2 className="text-2xl font-bold text-white">Network Topology</h2>
+          </div>
+          <div style={{ height: 'calc(100% - 80px)' }}>
+            <Topology routers={routers} />
+          </div>
+        </div>
 
-            <div className="bg-vrhost-dark rounded-lg border border-gray-700 overflow-hidden">
-              <div className="p-6 border-b border-gray-700">
-                <h2 className="text-xl font-bold text-white">
-                  {selectedLab ? `${selectedLab} - Devices` : 'All Devices'}
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+        {/* Device List */}
+        <div className="bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-700">
+          <h2 className="text-2xl font-bold mb-4 text-white">Devices</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left py-3 px-4 text-gray-300">Name</th>
+                  <th className="text-left py-3 px-4 text-gray-300">Type</th>
+                  <th className="text-left py-3 px-4 text-gray-300">State</th>
+                  <th className="text-left py-3 px-4 text-gray-300">Resources</th>
+                  <th className="text-right py-3 px-4 text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
                 {routers.map((router) => {
-                  const typeBadge = getRouterTypeBadge(router.router_type);
+                  const badge = getRouterTypeBadge(router.router_type);
                   return (
-                    <div
-                      key={router.name}
-                      className="bg-vrhost-darker p-6 rounded-lg border border-gray-700 hover:border-vrhost-primary transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-xl font-bold text-white">{router.name}</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${typeBadge.class}`}>
-                              {typeBadge.label}
-                            </span>
-                          </div>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStateBadgeClass(router.state)}`}>
+                    <tr key={router.name} className="border-b border-gray-700 hover:bg-gray-750">
+                      <td className="py-3 px-4 font-semibold text-white">{router.name}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded text-xs font-semibold text-white ${badge.class}`}>
+                          {badge.label}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded text-xs font-semibold text-white ${getStateColor(router.state)}`}>
                           {router.state}
                         </span>
-                      </div>
-                      <div className="space-y-2 mb-4 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Memory:</span>
-                          <span className="text-white">{router.memory_mb} MB</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">vCPUs:</span>
-                          <span className="text-white">{router.vcpus}</span>
-                        </div>
-                        {router.id && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">ID:</span>
-                            <span className="text-white">{router.id}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {/* Top row: Console + Stop/Start */}
-                        <div className="flex gap-2">
-                          {router.state === 'running' ? (
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 text-sm">
+                        {router.memory_mb}MB RAM • {router.vcpus} vCPU
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-end gap-2">
+                          {router.state === 'running' && (
                             <>
                               <button
-                                onClick={() => handleConsole(router.name)}
-                                className="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 px-4 py-2 rounded text-sm font-semibold transition-colors"
+                                onClick={() => openConsole(router.name)}
+                                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
                               >
                                 Console
                               </button>
                               <button
-                                onClick={() => handleStop(router.name)}
-                                className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded text-sm font-semibold transition-colors"
+                                onClick={() => stopRouter(router.name)}
+                                className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded transition-colors"
                               >
                                 Stop
                               </button>
+                              <button
+                                onClick={() => restartRouter(router.name)}
+                                className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded transition-colors"
+                              >
+                                Restart
+                              </button>
                             </>
-                          ) : router.state === 'stopping' ? (
+                          )}
+                          {router.state === 'shutoff' && (
                             <button
-                              disabled
-                              className="flex-1 bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded text-sm font-semibold cursor-not-allowed"
-                            >
-                              Stopping...
-                            </button>
-                          ) : router.state === 'starting' ? (
-                            <button
-                              disabled
-                              className="flex-1 bg-blue-500/20 text-blue-400 px-4 py-2 rounded text-sm font-semibold cursor-not-allowed"
-                            >
-                              Starting...
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleStart(router.name)}
-                              className="flex-1 bg-vrhost-primary/20 hover:bg-vrhost-primary/30 text-vrhost-primary px-4 py-2 rounded text-sm font-semibold transition-colors"
+                              onClick={() => startRouter(router.name)}
+                              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
                             >
                               Start
                             </button>
                           )}
+                          <button
+                            onClick={() => deleteRouter(router.name)}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                          >
+                            Delete
+                          </button>
                         </div>
-                        {/* Bottom row: Delete */}
-                        <button
-                          onClick={() => handleDelete(router.name)}
-                          className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Topology View */}
-        {currentView === 'topology' && (
-          <div className="bg-vrhost-dark rounded-lg border border-gray-700 overflow-hidden" style={{ height: '600px' }}>
-            <Topology routers={routers} />
+                {routers.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="text-center py-8 text-gray-400">
+                      No devices created yet. Create your first device above!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* New Lab Modal */}
-      {showNewLabModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-vrhost-dark p-8 rounded-lg border border-gray-700 w-full max-w-md">
-            <h2 className="text-2xl font-bold text-white mb-6">Create New Lab</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Lab Name</label>
-                <input
-                  type="text"
-                  value={newLabName}
-                  onChange={(e) => setNewLabName(e.target.value)}
-                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                  placeholder="jncis-sp-lab"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Description</label>
-                <textarea
-                  value={newLabDesc}
-                  onChange={(e) => setNewLabDesc(e.target.value)}
-                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                  rows="3"
-                  placeholder="My JNCIS-SP study lab"
-                />
-              </div>
-              <div className="flex gap-4 mt-6">
-                <button
-                  onClick={createLab}
-                  className="flex-1 bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-                >
-                  Create Lab
-                </button>
-                <button
-                  onClick={() => setShowNewLabModal(false)}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* Footer */}
+      <footer className="bg-gray-800 border-t border-gray-700 mt-12 py-6">
+        <div className="container mx-auto px-6 text-center text-gray-400 text-sm">
+          <p>VRHost Lab - Multi-Vendor Network Lab Platform</p>
+          <p className="mt-2">
+            Supports: Juniper vSRX • Cisco CSR1000v • Cisco IOSvL2 • Juniper vQFX
+          </p>
         </div>
-      )}
-
-      {/* New Device Modal */}
-      {showNewRouterModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-vrhost-dark p-8 rounded-lg border border-gray-700 w-full max-w-lg">
-            <h2 className="text-2xl font-bold text-white mb-6">Create New Device</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Device Name *</label>
-                <input
-                  type="text"
-                  value={newRouterName}
-                  onChange={(e) => setNewRouterName(e.target.value)}
-                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                  placeholder="r1, sw1, csr-r1, or jncis-sp-r1"
-                />
-                <p className="text-xs text-gray-500 mt-1">Tip: Use lab-name prefix (e.g. jncis-sp-r1) to group devices in labs</p>
-              </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">IP Address *</label>
-                <input
-                  type="text"
-                  value={newRouterIP}
-                  onChange={(e) => setNewRouterIP(e.target.value)}
-                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                  placeholder="10.10.50.13"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2 font-semibold">Device Type</label>
-                <select
-                  value={newRouterType}
-                  onChange={(e) => setNewRouterType(e.target.value)}
-                  className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                >
-                  <optgroup label="Routers">
-                    <option value="juniper">Juniper vSRX</option>
-                    <option value="cisco">Cisco CSR1000v</option>
-                  </optgroup>
-                  <optgroup label="Switches">
-                    <option value="cisco-switch">Cisco IOSvL2</option>
-                    <option value="juniper-switch" disabled>Juniper vQFX (Coming Soon)</option>
-                  </optgroup>
-                </select>
-                <p className="text-xs text-gray-400 mt-1">
-                  {getDeviceDescription(newRouterType)}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-400 text-sm mb-2">RAM (GB)</label>
-                  <input
-                    type="number"
-                    value={newRouterRAM}
-                    onChange={(e) => setNewRouterRAM(parseInt(e.target.value))}
-                    className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                    min="2"
-                    max="32"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-400 text-sm mb-2">vCPUs</label>
-                  <input
-                    type="number"
-                    value={newRouterCPUs}
-                    onChange={(e) => setNewRouterCPUs(parseInt(e.target.value))}
-                    className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                    min="1"
-                    max="16"
-                  />
-                </div>
-              </div>
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3 text-sm text-yellow-300">
-                ⚠️ {newRouterType === 'cisco' && 'Cisco CSR1000v takes 3-5 minutes to boot on first start.'}
-                {newRouterType === 'cisco-switch' && 'Cisco IOSvL2 takes 2-3 minutes to boot.'}
-                {newRouterType === 'juniper' && 'Juniper vSRX takes ~90 seconds to boot.'}
-                {newRouterType === 'juniper-switch' && 'Juniper vQFX takes 3-4 minutes to boot.'}
-                {' '}The device will start automatically after creation.
-              </div>
-              <div className="flex gap-4 mt-6">
-                <button
-                  onClick={createRouter}
-                  disabled={routerCreating}
-                  className="flex-1 bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {routerCreating ? 'Creating...' : 'Create Device'}
-                </button>
-                <button
-                  onClick={() => setShowNewRouterModal(false)}
-                  disabled={routerCreating}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </footer>
     </div>
   );
 }

@@ -1,0 +1,170 @@
+#!/bin/bash
+
+set -e
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+RE_BASE_IMAGE="/var/lib/libvirt/images/juniper/vqfx-20.2R1.10-re-qemu.qcow2"
+PFE_BASE_IMAGE="/var/lib/libvirt/images/juniper/vqfx-20.2R1-2019010209-pfe-qemu.qcow"
+DISK_POOL="/var/lib/libvirt/images"
+
+# VM specifications
+RE_RAM=2048        # 2GB for RE
+RE_VCPUS=1
+PFE_RAM=2048       # 2GB for PFE
+PFE_VCPUS=1
+
+# Check if name provided
+if [ -z "$1" ]; then
+    echo -e "${RED}Error: No switch name provided${NC}"
+    echo "Usage: $0 <switch-name>"
+    echo "Example: $0 sw1"
+    exit 1
+fi
+
+SWITCH_NAME="$1"
+RE_NAME="${SWITCH_NAME}-re"
+PFE_NAME="${SWITCH_NAME}-pfe"
+INTERNAL_NET="${SWITCH_NAME}-internal"
+
+# Check if base images exist
+if [ ! -f "$RE_BASE_IMAGE" ]; then
+    echo -e "${RED}Error: RE base image not found at $RE_BASE_IMAGE${NC}"
+    exit 1
+fi
+
+if [ ! -f "$PFE_BASE_IMAGE" ]; then
+    echo -e "${RED}Error: PFE base image not found at $PFE_BASE_IMAGE${NC}"
+    exit 1
+fi
+
+# Check if VMs already exist
+if virsh dominfo "$RE_NAME" &>/dev/null; then
+    echo -e "${RED}Error: VM $RE_NAME already exists${NC}"
+    exit 1
+fi
+
+if virsh dominfo "$PFE_NAME" &>/dev/null; then
+    echo -e "${RED}Error: VM $PFE_NAME already exists${NC}"
+    exit 1
+fi
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}Creating Juniper vQFX: $SWITCH_NAME${NC}"
+echo -e "${BLUE}========================================${NC}"
+echo ""
+
+# Step 1: Create internal network for RE-PFE communication
+echo -e "${YELLOW}[1/6]${NC} Creating internal network..."
+cat > /tmp/${INTERNAL_NET}.xml << EOF
+<network>
+  <name>${INTERNAL_NET}</name>
+  <bridge name='virbr-${SWITCH_NAME}' stp='on' delay='0'/>
+</network>
+EOF
+
+virsh net-define /tmp/${INTERNAL_NET}.xml
+virsh net-start ${INTERNAL_NET}
+virsh net-autostart ${INTERNAL_NET}
+rm /tmp/${INTERNAL_NET}.xml
+echo -e "${GREEN}✓ Internal network created: ${INTERNAL_NET}${NC}"
+
+# Step 2: Create RE disk
+echo -e "${YELLOW}[2/6]${NC} Creating RE disk from base image..."
+RE_DISK="${DISK_POOL}/${RE_NAME}.qcow2"
+qemu-img create -f qcow2 -F qcow2 -b "$RE_BASE_IMAGE" "$RE_DISK" 2>/dev/null
+echo -e "${GREEN}✓ RE disk created: ${RE_NAME}.qcow2${NC}"
+
+# Step 3: Create PFE disk
+echo -e "${YELLOW}[3/6]${NC} Creating PFE disk from base image..."
+PFE_DISK="${DISK_POOL}/${PFE_NAME}.qcow2"
+qemu-img create -f qcow2 -F qcow2 -b "$PFE_BASE_IMAGE" "$PFE_DISK" 2>/dev/null
+echo -e "${GREEN}✓ PFE disk created: ${PFE_NAME}.qcow2${NC}"
+
+# Step 4: Create PFE VM (create first, start last)
+echo -e "${YELLOW}[4/6]${NC} Creating PFE VM..."
+virt-install \
+  --name="${PFE_NAME}" \
+  --memory=${PFE_RAM} \
+  --vcpus=${PFE_VCPUS} \
+  --machine pc-i440fx-6.2 \
+  --import \
+  --disk path="${PFE_DISK}",format=qcow2,bus=ide \
+  --network bridge=br0,model=e1000 \
+  --network network=${INTERNAL_NET},model=virtio-net-pci \
+  --osinfo linux2020 \
+  --graphics none \
+  --noautoconsole \
+  --boot hd
+
+echo -e "${GREEN}✓ PFE VM created and started: ${PFE_NAME}${NC}"
+
+# Step 5: Create RE VM with 12 data ports
+echo -e "${YELLOW}[5/6]${NC} Creating RE VM with data ports..."
+
+# Build network interfaces string (eth0=mgmt, eth1=internal, eth2=unused, eth3-14=data)
+NETWORK_ARGS="--network bridge=br0,model=e1000 --network network=${INTERNAL_NET},model=e1000"
+# Add 13 more interfaces (eth2 is unused, eth3-14 are data ports)
+for i in {1..13}; do
+    NETWORK_ARGS="${NETWORK_ARGS} --network bridge=br0,model=virtio-net-pci"
+done
+
+virt-install \
+  --name="${RE_NAME}" \
+  --memory=${RE_RAM} \
+  --vcpus=${RE_VCPUS} \
+  --machine pc-i440fx-6.2 \
+  --import \
+  --disk path="${RE_DISK}",format=qcow2,bus=ide \
+  ${NETWORK_ARGS} \
+  --osinfo linux2020 \
+  --graphics none \
+  --noautoconsole \
+  --boot hd
+
+echo -e "${GREEN}✓ RE VM created and started: ${RE_NAME}${NC}"
+
+# Step 6: Wait for boot and display status
+echo -e "${YELLOW}[6/6]${NC} Waiting for switch to boot..."
+echo ""
+echo -e "${BLUE}Note:${NC} vQFX requires ~7 minutes to fully boot both VMs"
+echo -e "${BLUE}Note:${NC} PFE will use 100% CPU (this is normal)"
+echo ""
+
+sleep 5
+
+# Display summary
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}vQFX Switch Created Successfully!${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
+echo -e "${BLUE}Switch Name:${NC}     $SWITCH_NAME"
+echo -e "${BLUE}RE VM:${NC}           $RE_NAME (1GB RAM, 1 vCPU)"
+echo -e "${BLUE}PFE VM:${NC}          $PFE_NAME (2GB RAM, 1 vCPU)"
+echo -e "${BLUE}Internal Net:${NC}    $INTERNAL_NET"
+echo ""
+echo -e "${BLUE}Interface Mapping:${NC}"
+echo -e "  eth0 = fxp0 (management)"
+echo -e "  eth1 = internal link to PFE"
+echo -e "  eth2 = unusable"
+echo -e "  eth3 = xe-0/0/0"
+echo -e "  eth4 = xe-0/0/1"
+echo -e "  ...  = ..."
+echo -e "  eth14 = xe-0/0/11"
+echo ""
+echo -e "${YELLOW}Commands:${NC}"
+echo -e "  View RE console: ${GREEN}virsh console $RE_NAME${NC}"
+echo -e "  View PFE logs:   ${GREEN}virsh console $PFE_NAME${NC}"
+echo -e "  Stop switch:     ${GREEN}virsh shutdown $RE_NAME && virsh shutdown $PFE_NAME${NC}"
+echo -e "  Start switch:    ${GREEN}virsh start $PFE_NAME && sleep 30 && virsh start $RE_NAME${NC}"
+echo -e "  Delete switch:   ${GREEN}mkvqfx-delete $SWITCH_NAME${NC}"
+echo ""
+echo -e "${YELLOW}Waiting for boot (~7 min):${NC}"
+echo -e "  Monitor with: ${GREEN}watch 'virsh list | grep $SWITCH_NAME'${NC}"
+echo ""

@@ -12,7 +12,7 @@ function Topology({ routers, onRouterClick }) {
     // Initialize Cytoscape
     const cytoscapeInstance = cytoscape({
       container: cyRef.current,
-      
+
       style: [
         // Node styles
         {
@@ -147,7 +147,7 @@ function Topology({ routers, onRouterClick }) {
 
   const handleResetLayout = () => {
     if (cy) {
-      cy.layout({ 
+      cy.layout({
         name: 'circle',
         animate: true,
         animationDuration: 500,
@@ -157,7 +157,7 @@ function Topology({ routers, onRouterClick }) {
 
   const handleGridLayout = () => {
     if (cy) {
-      cy.layout({ 
+      cy.layout({
         name: 'grid',
         animate: true,
         animationDuration: 500,
@@ -176,12 +176,36 @@ function Topology({ routers, onRouterClick }) {
     <div className="w-full h-full flex flex-col bg-vrhost-darker">
       {/* Topology Controls */}
       <div className="bg-vrhost-dark border-b border-gray-700 p-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-white">Network Topology</h2>
-          <p className="text-sm text-gray-400">
-            {routers.length} router{routers.length !== 1 ? 's' : ''} • Drag to reposition • Click for details
-          </p>
+        <div className="flex items-center gap-8">
+          <div>
+            <h2 className="text-xl font-bold text-white">Network Topology</h2>
+            <p className="text-sm text-gray-400">
+              {routers.length} router{routers.length !== 1 ? 's' : ''} • Drag to reposition • Click for details
+            </p>
+          </div>
+          
+          {/* Status Legend - Now in header */}
+          <div className="flex items-center gap-4 pl-8 border-l border-gray-700">
+            <span className="text-xs font-semibold text-gray-400 uppercase">Status:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span className="text-xs text-gray-300">Running</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span className="text-xs text-gray-300">Starting</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <span className="text-xs text-gray-300">Stopping</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+              <span className="text-xs text-gray-300">Stopped</span>
+            </div>
+          </div>
         </div>
+        
         <div className="flex gap-2">
           <button
             onClick={handleResetLayout}
@@ -207,29 +231,6 @@ function Topology({ routers, onRouterClick }) {
       {/* Topology Canvas */}
       <div className="flex-1 relative">
         <div ref={cyRef} className="absolute inset-0" />
-        
-        {/* Legend */}
-        <div className="absolute bottom-4 left-4 bg-vrhost-dark border border-gray-700 rounded-lg p-4">
-          <h3 className="text-sm font-bold text-white mb-2">Status Legend</h3>
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-green-500"></div>
-              <span className="text-gray-300">Running</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-              <span className="text-gray-300">Starting</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-              <span className="text-gray-300">Stopping</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-gray-500"></div>
-              <span className="text-gray-300">Stopped</span>
-            </div>
-          </div>
-        </div>
 
         {/* Selected Router Info */}
         {selectedRouter && (

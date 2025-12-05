@@ -190,6 +190,27 @@ async def stop_all_routers(force: bool = False, request: Request = None):
 # Statistics
 # ============================================
 
+@app.get("/api/stats")
+async def get_stats(request: Request):
+    """Get simplified system statistics for dashboard"""
+    system_stats = request.app.state.stats_service.get_system_stats()
+    
+    # Calculate percentages
+    memory_percent = 0
+    if system_stats.get('resources'):
+        memory_used = system_stats['resources']['memory_used_mb']
+        memory_total = system_stats['resources']['memory_total_mb']
+        memory_percent = (memory_used / memory_total * 100) if memory_total > 0 else 0
+    
+    cpu_percent = system_stats.get('disk', {}).get('used_percent', 0)
+    
+    return {
+        "running_routers": system_stats.get('vms', {}).get('running', 0),
+        "total_routers": system_stats.get('vms', {}).get('total', 0),
+        "cpu_percent": cpu_percent,
+        "memory_percent": memory_percent
+    }
+
 @app.get("/api/stats/system")
 async def get_system_stats(request: Request):
     """Get overall system statistics"""
