@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Topology from './Topology';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://10.10.50.1:8000';
+const API_BASE = process.env.REACT_APP_API_URL || `http://${window.location.hostname}:8000`;
 
 function App() {
   const [routers, setRouters] = useState([]);
