@@ -202,7 +202,7 @@ After=network.target libvirtd.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/vrhost-lab/backend
+WorkingDirectory=/opt/vrhost-lab
 Environment="PATH=/opt/vrhost-lab/venv/bin"
 ExecStart=/opt/vrhost-lab/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 Restart=always
