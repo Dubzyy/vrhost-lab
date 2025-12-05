@@ -1,13 +1,17 @@
 from typing import List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import libvirt
 
 from backend.models.router import RouterCreate, RouterInfo
+from backend.models.topology import Topology, TopologyInfo
+from backend.models.lab import LabCreate, LabInfo
 from backend.services.router_service import RouterService
 from backend.services.stats_service import StatsService
 from backend.services.console_service import ConsoleService
+from backend.services.topology_service import TopologyService
+from backend.services.lab_service import LabService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,17 +23,18 @@ async def lifespan(app: FastAPI):
         app.state.stats_service = StatsService(app.state.libvirt_conn)
         app.state.lab_service = LabService()
         app.state.console_service = ConsoleService()
+        app.state.topology_service = TopologyService()
         print("✓ Connected to libvirt")
     except Exception as e:
         print(f"✗ Failed to connect to libvirt: {e}")
-    
+
     yield
-    
+
     # Shutdown
     # Cleanup console sessions
     if hasattr(app.state, 'console_service'):
-        app.state.console_service.cleanup_old_sessions()
-    
+        app.state.console_service.close_all_sessions()
+
     if hasattr(app.state, 'libvirt_conn'):
         app.state.libvirt_conn.close()
         print("✓ Disconnected from libvirt")
@@ -60,10 +65,10 @@ async def root():
     }
 
 @app.get("/api/health")
-async def health_check():
+async def health_check(request: Request):
     """Health check endpoint"""
     try:
-        conn = app.state.libvirt_conn
+        conn = request.app.state.libvirt_conn
         domains = conn.listAllDomains()
         return {
             "status": "healthy",
@@ -76,11 +81,15 @@ async def health_check():
             "error": str(e)
         }
 
+# ============================================
+# Router Management
+# ============================================
+
 @app.get("/api/routers", response_model=dict)
-async def list_routers():
+async def list_routers(request: Request):
     """List all routers"""
     try:
-        routers = app.state.router_service.list_routers()
+        routers = request.app.state.router_service.list_routers()
         return {
             "routers": routers,
             "count": len(routers)
@@ -89,17 +98,17 @@ async def list_routers():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/routers")
-async def create_router(router: RouterCreate):
+async def create_router(router: RouterCreate, request: Request):
     """Create a new router"""
     try:
-        result = app.state.router_service.create_router(
+        result = request.app.state.router_service.create_router(
             name=router.name,
             ip=router.ip,
             router_type=router.router_type,
             ram=router.ram_gb,
             vcpus=router.vcpus
         )
-        
+
         if result["success"]:
             return result
         else:
@@ -108,11 +117,11 @@ async def create_router(router: RouterCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/routers/{name}")
-async def delete_router(name: str):
+async def delete_router(name: str, request: Request):
     """Delete a router"""
     try:
-        result = app.state.router_service.delete_router(name)
-        
+        result = request.app.state.router_service.delete_router(name)
+
         if result["success"]:
             return result
         else:
@@ -131,203 +140,200 @@ async def get_console_info(name: str):
     }
 
 @app.post("/api/routers/{name}/start")
-async def start_router(name: str):
+async def start_router(name: str, request: Request):
     """Start a stopped router"""
-    result = app.state.router_service.start_router(name)
+    result = request.app.state.router_service.start_router(name)
     if result["success"]:
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
 
 @app.post("/api/routers/{name}/stop")
-async def stop_router(name: str, force: bool = False):
+async def stop_router(name: str, force: bool = False, request: Request = None):
     """Stop a running router"""
-    result = app.state.router_service.stop_router(name, force)
+    result = request.app.state.router_service.stop_router(name, force)
     if result["success"]:
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
 
 @app.post("/api/routers/{name}/restart")
-async def restart_router(name: str):
+async def restart_router(name: str, request: Request):
     """Restart a router"""
-    result = app.state.router_service.restart_router(name)
+    result = request.app.state.router_service.restart_router(name)
     if result["success"]:
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
 
 @app.get("/api/routers/{name}")
-async def get_router_details(name: str):
+async def get_router_details(name: str, request: Request):
     """Get detailed information about a router"""
-    result = app.state.router_service.get_router_details(name)
+    result = request.app.state.router_service.get_router_details(name)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 @app.post("/api/routers/bulk/start-all")
-async def start_all_routers():
+async def start_all_routers(request: Request):
     """Start all stopped routers"""
-    result = app.state.router_service.start_all_routers()
+    result = request.app.state.router_service.start_all_routers()
     return result
 
 @app.post("/api/routers/bulk/stop-all")
-async def stop_all_routers(force: bool = False):
+async def stop_all_routers(force: bool = False, request: Request = None):
     """Stop all running routers"""
-    result = app.state.router_service.stop_all_routers(force)
+    result = request.app.state.router_service.stop_all_routers(force)
     return result
 
+# ============================================
+# Statistics
+# ============================================
+
 @app.get("/api/stats/system")
-async def get_system_stats():
+async def get_system_stats(request: Request):
     """Get overall system statistics"""
-    return app.state.stats_service.get_system_stats()
+    return request.app.state.stats_service.get_system_stats()
 
 @app.get("/api/stats/routers/{name}")
-async def get_router_stats(name: str):
+async def get_router_stats(name: str, request: Request):
     """Get real-time statistics for a specific router"""
-    result = app.state.stats_service.get_router_stats(name)
+    result = request.app.state.stats_service.get_router_stats(name)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
+# ============================================
 # Topology Management
-from backend.models.topology import Topology, TopologyInfo
-from backend.services.topology_service import TopologyService
-
-# Initialize topology service (add near other service initializations in lifespan)
-topology_service = TopologyService()
+# ============================================
 
 @app.get("/api/topologies", response_model=List[dict])
-async def list_topologies():
+async def list_topologies(request: Request):
     """List all saved topologies"""
-    return topology_service.list_topologies()
+    return request.app.state.topology_service.list_topologies()
 
 @app.post("/api/topologies")
-async def save_topology(topology: Topology):
+async def save_topology(topology: Topology, request: Request):
     """Save current lab topology"""
-    result = topology_service.save_topology(
+    result = request.app.state.topology_service.save_topology(
         name=topology.name,
         description=topology.description,
         routers=[r.dict() for r in topology.routers]
     )
-    
+
     if result["success"]:
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
 
 @app.get("/api/topologies/{name}")
-async def load_topology(name: str):
+async def load_topology(name: str, request: Request):
     """Load a saved topology"""
-    result = topology_service.load_topology(name)
+    result = request.app.state.topology_service.load_topology(name)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 @app.delete("/api/topologies/{name}")
-async def delete_topology(name: str):
+async def delete_topology(name: str, request: Request):
     """Delete a saved topology"""
-    result = topology_service.delete_topology(name)
+    result = request.app.state.topology_service.delete_topology(name)
     if result["success"]:
         return result
     else:
         raise HTTPException(status_code=404, detail=result["message"])
 
+# ============================================
 # Lab Management
-from backend.models.lab import LabCreate, LabInfo
-from backend.services.lab_service import LabService
-
-# Initialize lab service in lifespan (add this line after router_service initialization)
-# Add: app.state.lab_service = LabService()
+# ============================================
 
 @app.get("/api/labs", response_model=List[dict])
-async def list_labs():
+async def list_labs(request: Request):
     """List all labs"""
-    return app.state.lab_service.list_labs(app.state.router_service)
+    return request.app.state.lab_service.list_labs(request.app.state.router_service)
 
 @app.post("/api/labs")
-async def create_lab(lab: LabCreate):
+async def create_lab(lab: LabCreate, request: Request):
     """Create a new lab"""
-    result = app.state.lab_service.create_lab(lab.name, lab.description)
+    result = request.app.state.lab_service.create_lab(lab.name, lab.description)
     if result["success"]:
         return result
     else:
         raise HTTPException(status_code=500, detail=result["message"])
 
 @app.get("/api/labs/{name}")
-async def get_lab(name: str):
+async def get_lab(name: str, request: Request):
     """Get lab details"""
-    result = app.state.lab_service.get_lab(name)
+    result = request.app.state.lab_service.get_lab(name)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 @app.delete("/api/labs/{name}")
-async def delete_lab(name: str):
+async def delete_lab(name: str, request: Request):
     """Delete a lab"""
-    result = app.state.lab_service.delete_lab(name)
+    result = request.app.state.lab_service.delete_lab(name)
     if result["success"]:
         return result
     else:
         raise HTTPException(status_code=404, detail=result["message"])
 
 @app.get("/api/labs/{name}/routers")
-async def get_lab_routers(name: str):
+async def get_lab_routers(name: str, request: Request):
     """Get all routers in a lab"""
-    routers = app.state.lab_service.get_lab_routers(name, app.state.router_service)
+    routers = request.app.state.lab_service.get_lab_routers(name, request.app.state.router_service)
     return {"lab": name, "routers": routers, "count": len(routers)}
 
 @app.post("/api/labs/{name}/start")
-async def start_lab(name: str):
+async def start_lab(name: str, request: Request):
     """Start all routers in a lab"""
-    routers = app.state.lab_service.get_lab_routers(name, app.state.router_service)
+    routers = request.app.state.lab_service.get_lab_routers(name, request.app.state.router_service)
     started = []
     failed = []
-    
+
     for router in routers:
         if router['state'] != 'running':
-            result = app.state.router_service.start_router(router['name'])
+            result = request.app.state.router_service.start_router(router['name'])
             if result['success']:
                 started.append(router['name'])
             else:
                 failed.append({"name": router['name'], "error": result['message']})
-    
+
     return {"success": True, "started": started, "failed": failed}
 
 @app.post("/api/labs/{name}/stop")
-async def stop_lab(name: str, force: bool = False):
+async def stop_lab(name: str, force: bool = False, request: Request = None):
     """Stop all routers in a lab"""
-    routers = app.state.lab_service.get_lab_routers(name, app.state.router_service)
+    routers = request.app.state.lab_service.get_lab_routers(name, request.app.state.router_service)
     stopped = []
     failed = []
-    
+
     for router in routers:
         if router['state'] == 'running':
-            result = app.state.router_service.stop_router(router['name'], force)
+            result = request.app.state.router_service.stop_router(router['name'], force)
             if result['success']:
                 stopped.append(router['name'])
             else:
                 failed.append({"name": router['name'], "error": result['message']})
-    
-    return {"success": True, "stopped": stopped, "failed": failed}
 
+    return {"success": True, "stopped": stopped, "failed": failed}
 
 # ============================================
 # Console Management
 # ============================================
 
 @app.post("/api/routers/{name}/console/session")
-async def create_console_session(name: str):
+async def create_console_session(name: str, request: Request):
     """Create a web console session for a router"""
     try:
         # Check if router exists
-        router = app.state.router_service.get_router_details(name)
+        router = request.app.state.router_service.get_router_details(name)
         if "error" in router:
             raise HTTPException(status_code=404, detail="Router not found")
-        
+
         # Create console session
-        session = app.state.console_service.create_console_session(name)
-        
+        session = request.app.state.console_service.create_session(name)
+
         return {
             "success": True,
             "token": session['token'],
@@ -337,19 +343,19 @@ async def create_console_session(name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/console/{token}")
-async def get_console_session(token: str):
+async def get_console_session(token: str, request: Request):
     """Get console session info"""
-    session = app.state.console_service.get_session(token)
+    session = request.app.state.console_service.get_session(token)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found or expired")
-    
+
     return {
         "router_name": session['router_name'],
         "port": session['port']
     }
 
 @app.delete("/api/console/{token}")
-async def close_console_session(token: str):
+async def close_console_session(token: str, request: Request):
     """Close a console session"""
-    app.state.console_service.close_session(token)
+    request.app.state.console_service.close_session(token)
     return {"success": True}

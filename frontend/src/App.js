@@ -175,22 +175,22 @@ function App() {
 
   const handleConsole = async (name) => {
     try {
-      // Create console session
       const response = await consoleAPI.createSession(name);
       const { port } = response.data;
     
-      // Use actual server hostname for SOCKS proxy compatibility
-      // When using SSH tunnel, use the Tailscale IP instead of localhost
+      // Use current hostname, but replace localhost with actual IP
       let consoleHost = window.location.hostname;
       if (consoleHost === 'localhost' || consoleHost === '127.0.0.1') {
-        // Use Tailscale IP for SOCKS proxy
-        consoleHost = '100.77.52.108';
+        consoleHost = '10.10.50.1';
       }
     
       const consoleUrl = `http://${consoleHost}:${port}`;
-      window.open(consoleUrl, `console-${name}`, 'width=1000,height=600');
+      console.log('Opening console:', consoleUrl);  // Debug log
+    
+      window.open(consoleUrl, `console-${name}`, 'width=1200,height=800');
     } catch (error) {
-      alert('Failed to open console: ' + (error.response?.data?.detail || error.message));
+      console.error('Failed to open console:', error);
+      alert('Failed to open console: ' + error.message);
     }
   };
 
