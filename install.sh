@@ -1,257 +1,278 @@
 #!/bin/bash
 
-# VRHost Lab Installer
-# One-command installation script for multi-vendor network lab platform
-
 set -e
 
-INSTALL_DIR="/opt/vrhost-lab"
-API_PORT=8000
-WEB_PORT=3000
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-echo "============================================"
-echo "   VRHost Lab - Automated Installation"
-echo "   Multi-Vendor Network Lab Platform"
-echo "============================================"
-echo ""
+# Print colored messages
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
 # Check if running as root
-if [ "$EUID" -ne 0 ]; then
-    echo "❌ Please run as root (use sudo)"
+if [[ $EUID -ne 0 ]]; then
+   print_error "This script must be run as root (use sudo)"
+   exit 1
+fi
+
+print_status "Starting VRHost Lab installation..."
+
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+INSTALL_DIR="/opt/vrhost-lab"
+
+# Check KVM support
+print_status "Checking KVM virtualization support..."
+if ! grep -E -q 'vmx|svm' /proc/cpuinfo; then
+    print_error "CPU does not support virtualization (VT-x/AMD-V)"
+    print_error "Enable virtualization in BIOS or use a bare metal server"
     exit 1
 fi
+print_success "KVM support detected"
 
-echo "✓ Running as root"
+# Update package list
+print_status "Updating package list..."
+apt-get update -qq
 
-# Check OS
-if [ ! -f /etc/os-release ]; then
-    echo "❌ Cannot detect OS. This installer supports Ubuntu/Debian."
-    exit 1
+# Install Node.js 20.x
+print_status "Installing Node.js 20.x..."
+if ! command -v node &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+    print_success "Node.js $(node --version) installed"
+else
+    print_success "Node.js $(node --version) already installed"
 fi
 
-. /etc/os-release
-if [[ "$ID" != "ubuntu" && "$ID" != "debian" ]]; then
-    echo "⚠️  Warning: This installer is designed for Ubuntu/Debian"
-    read -p "Continue anyway? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
+# Install Python 3.11+
+print_status "Installing Python 3.11+..."
+apt-get install -y python3 python3-pip python3-venv
+print_success "Python $(python3 --version) installed"
 
-echo "✓ OS: $PRETTY_NAME"
-
-# Step 1: Install system dependencies
-echo ""
-echo "[1/9] Installing system dependencies..."
-apt update -qq
-apt install -y \
+# Install KVM and virtualization tools
+print_status "Installing KVM, QEMU, and libvirt..."
+apt-get install -y \
+    qemu-kvm \
     libvirt-daemon-system \
     libvirt-clients \
-    qemu-kvm \
     bridge-utils \
-    python3 \
-    python3-pip \
-    python3-venv \
-    python3-dev \
-    libvirt-dev \
-    pkg-config \
-    gcc \
-    curl \
-    git \
-    ttyd > /dev/null 2>&1
+    virt-manager \
+    virtinst \
+    libguestfs-tools \
+    guestfs-tools
 
-echo "✓ System dependencies installed"
-
-# Step 2: Install Node.js 20
-echo ""
-echo "[2/9] Installing Node.js 20..."
-if ! command -v node &> /dev/null || [ "$(node -v | cut -d'.' -f1 | sed 's/v//')" -lt 20 ]; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
-    apt install -y nodejs > /dev/null 2>&1
+# Add current user to libvirt groups (if not root)
+if [ -n "$SUDO_USER" ]; then
+    usermod -aG libvirt,kvm "$SUDO_USER"
+    print_success "Added $SUDO_USER to libvirt and kvm groups"
 fi
-echo "✓ Node.js $(node -v) installed"
 
-# Step 3: Verify KVM support
-echo ""
-echo "[3/9] Verifying KVM virtualization support..."
-if ! grep -qE '(vmx|svm)' /proc/cpuinfo; then
-    echo "⚠️  Warning: CPU virtualization extensions not detected"
-    echo "   Make sure VT-x/AMD-V is enabled in BIOS"
-fi
-if [ -e /dev/kvm ]; then
-    echo "✓ KVM support verified"
+# Start and enable libvirtd
+systemctl enable --now libvirtd
+print_success "libvirtd service started and enabled"
+
+# Install ttyd for web console
+print_status "Installing ttyd..."
+if ! command -v ttyd &> /dev/null; then
+    TTYD_VERSION="1.7.3"
+    wget -q "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64" -O /usr/local/bin/ttyd
+    chmod +x /usr/local/bin/ttyd
+    print_success "ttyd ${TTYD_VERSION} installed"
 else
-    echo "⚠️  Warning: /dev/kvm not found - KVM may not be available"
+    print_success "ttyd already installed"
 fi
 
-# Step 4: Setup Python backend
-echo ""
-echo "[4/9] Setting up Python backend..."
+# Copy project to /opt if not already there
+if [ "$SCRIPT_DIR" != "$INSTALL_DIR" ]; then
+    print_status "Copying project to ${INSTALL_DIR}..."
+    mkdir -p "$INSTALL_DIR"
+    cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/"
+    print_success "Project copied to ${INSTALL_DIR}"
+else
+    print_success "Already running from ${INSTALL_DIR}"
+fi
+
 cd "$INSTALL_DIR"
-if [ ! -d "venv" ]; then
-    python3 -m venv venv
+
+# Install automation scripts
+print_status "Installing automation scripts..."
+if [ -d "$INSTALL_DIR/scripts" ]; then
+    # Install mkjuniper
+    if [ -f "$INSTALL_DIR/scripts/mkjuniper" ]; then
+        cp "$INSTALL_DIR/scripts/mkjuniper" /usr/local/bin/
+        chmod +x /usr/local/bin/mkjuniper
+        print_success "mkjuniper script installed"
+    else
+        print_warning "mkjuniper script not found in scripts/ directory"
+    fi
+    
+    # Install mkcsr1000v
+    if [ -f "$INSTALL_DIR/scripts/mkcsr1000v" ]; then
+        cp "$INSTALL_DIR/scripts/mkcsr1000v" /usr/local/bin/
+        chmod +x /usr/local/bin/mkcsr1000v
+        print_success "mkcsr1000v script installed"
+    else
+        print_warning "mkcsr1000v script not found in scripts/ directory"
+    fi
+    
+    # Install mkviosl2
+    if [ -f "$INSTALL_DIR/scripts/mkviosl2" ]; then
+        cp "$INSTALL_DIR/scripts/mkviosl2" /usr/local/bin/
+        chmod +x /usr/local/bin/mkviosl2
+        print_success "mkviosl2 script installed"
+    else
+        print_warning "mkviosl2 script not found in scripts/ directory"
+    fi
+    
+    # Install mkvm (generic)
+    if [ -f "$INSTALL_DIR/scripts/mkvm" ]; then
+        cp "$INSTALL_DIR/scripts/mkvm" /usr/local/bin/
+        chmod +x /usr/local/bin/mkvm
+        print_success "mkvm script installed"
+    fi
+else
+    print_warning "scripts/ directory not found - automation scripts not installed"
 fi
+
+# Setup Python virtual environment for backend
+print_status "Setting up Python virtual environment..."
+cd "$INSTALL_DIR/backend"
+python3 -m venv venv
 source venv/bin/activate
+
+print_status "Installing Python dependencies..."
 pip install --quiet --upgrade pip
-pip install --quiet \
-    fastapi \
-    uvicorn[standard] \
-    libvirt-python \
-    pydantic \
-    websockets \
-    python-multipart
+pip install --quiet -r requirements.txt
+deactivate
+print_success "Python backend dependencies installed"
 
-echo "✓ Backend dependencies installed"
-
-# Step 5: Install helper scripts
-echo ""
-echo "[5/9] Installing helper scripts..."
-
-# Install mkjuniper
-if [ -f "$INSTALL_DIR/scripts/mkjuniper" ]; then
-    cp "$INSTALL_DIR/scripts/mkjuniper" /usr/local/bin/mkjuniper
-    chmod +x /usr/local/bin/mkjuniper
-    echo "✓ mkjuniper installed (Juniper vSRX)"
-else
-    echo "⚠️  mkjuniper script not found - you'll need to add it manually"
-fi
-
-# Install mkcsr1000v
-if [ -f "$INSTALL_DIR/scripts/mkcsr1000v" ]; then
-    cp "$INSTALL_DIR/scripts/mkcsr1000v" /usr/local/bin/mkcsr1000v
-    chmod +x /usr/local/bin/mkcsr1000v
-    echo "✓ mkcsr1000v installed (Cisco CSR1000v)"
-else
-    echo "⚠️  mkcsr1000v script not found - you'll need to add it manually"
-fi
-
-# Step 6: Setup React frontend
-echo ""
-echo "[6/9] Setting up React frontend..."
+# Build React frontend
+print_status "Building React frontend..."
 cd "$INSTALL_DIR/frontend"
-if [ ! -d "node_modules" ]; then
-    npm install --silent > /dev/null 2>&1
-fi
-echo "✓ Frontend dependencies installed"
+npm install --quiet
+npm run build
+print_success "React frontend built"
 
-# Step 7: Build frontend for production
-echo ""
-echo "[7/9] Building frontend for production..."
-cd "$INSTALL_DIR/frontend"
-npm run build --silent > /dev/null 2>&1
-npm install -g serve --silent > /dev/null 2>&1
-echo "✓ Frontend built"
-
-# Step 8: Create systemd services
-echo ""
-echo "[8/9] Creating systemd services..."
-
-# Backend service
-cat > /etc/systemd/system/vrhost-api.service <<APISERVICE
+# Create systemd service for backend API
+print_status "Creating systemd service for backend API..."
+cat > /etc/systemd/system/vrhost-api.service << 'APIEOF'
 [Unit]
-Description=VRHost Lab API Server
+Description=VRHost Lab API Service
 After=network.target libvirtd.service
-Requires=libvirtd.service
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$INSTALL_DIR
-Environment="PATH=$INSTALL_DIR/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=$INSTALL_DIR/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port $API_PORT
+WorkingDirectory=/opt/vrhost-lab/backend
+Environment="PATH=/opt/vrhost-lab/backend/venv/bin"
+ExecStart=/opt/vrhost-lab/backend/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-APISERVICE
+APIEOF
 
-# Frontend service (production build)
-cat > /etc/systemd/system/vrhost-web.service <<WEBSERVICE
+# Create systemd service for frontend web server
+print_status "Creating systemd service for frontend web server..."
+cat > /etc/systemd/system/vrhost-web.service << 'WEBEOF'
 [Unit]
-Description=VRHost Lab Web Interface
-After=network.target vrhost-api.service
+Description=VRHost Lab Web Service
+After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$INSTALL_DIR/frontend
-Environment="PATH=/usr/bin:/bin"
-ExecStart=/usr/bin/npx serve -s build -l tcp://0.0.0.0:$WEB_PORT
+WorkingDirectory=/opt/vrhost-lab/frontend
+ExecStart=/usr/bin/npx serve -s build -l 3000
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-WEBSERVICE
+WEBEOF
 
+# Reload systemd and enable services
+print_status "Enabling and starting services..."
 systemctl daemon-reload
-echo "✓ Systemd services created"
+systemctl enable vrhost-api vrhost-web
+systemctl restart vrhost-api vrhost-web
 
-# Step 9: Start services
-echo ""
-echo "[9/9] Starting services..."
-systemctl enable vrhost-api > /dev/null 2>&1
-systemctl enable vrhost-web > /dev/null 2>&1
-systemctl start vrhost-api
-systemctl start vrhost-web
-
-# Wait for services to start
+# Wait a moment for services to start
 sleep 3
 
 # Check service status
-API_STATUS=$(systemctl is-active vrhost-api)
-WEB_STATUS=$(systemctl is-active vrhost-web)
-
-if [ "$API_STATUS" = "active" ] && [ "$WEB_STATUS" = "active" ]; then
-    echo "✓ Services started and enabled"
+if systemctl is-active --quiet vrhost-api; then
+    print_success "vrhost-api service is running"
 else
-    echo "⚠️  Warning: Some services may not have started properly"
-    echo "   API Status: $API_STATUS"
-    echo "   Web Status: $WEB_STATUS"
-    echo "   Check logs with: journalctl -u vrhost-api -n 50"
+    print_error "vrhost-api service failed to start"
+    systemctl status vrhost-api --no-pager
+fi
+
+if systemctl is-active --quiet vrhost-web; then
+    print_success "vrhost-web service is running"
+else
+    print_error "vrhost-web service failed to start"
+    systemctl status vrhost-web --no-pager
 fi
 
 # Get server IP
-SERVER_IP=$(ip route get 1.1.1.1 | grep -oP 'src \K[\d.]+' 2>/dev/null || hostname -I | awk '{print $1}')
+SERVER_IP=$(hostname -I | awk '{print $1}')
 
+# Print completion message
 echo ""
-echo "============================================"
-echo "   ✅ VRHost Lab Installation Complete!"
-echo "============================================"
+echo -e "${GREEN}============================================${NC}"
+echo -e "${GREEN}  VRHost Lab Installation Complete! 🚀${NC}"
+echo -e "${GREEN}============================================${NC}"
 echo ""
-echo "🌐 Access Points:"
-echo "   Web Interface: http://$SERVER_IP:$WEB_PORT"
-echo "   API Server:    http://$SERVER_IP:$API_PORT"
-echo "   API Docs:      http://$SERVER_IP:$API_PORT/docs"
+echo -e "${BLUE}Access Points:${NC}"
+echo -e "  Web Interface: ${GREEN}http://localhost:3000${NC}"
+echo -e "  Web Interface: ${GREEN}http://${SERVER_IP}:3000${NC}"
+echo -e "  API Docs:      ${GREEN}http://${SERVER_IP}:8000/docs${NC}"
 echo ""
-echo "🚀 Supported Platforms:"
-echo "   ✓ Juniper vSRX   (use: mkjuniper <name>)"
-echo "   ✓ Cisco CSR1000v (use: mkcsr1000v <name>)"
+echo -e "${BLUE}Installed Scripts:${NC}"
+echo -e "  ${GREEN}mkjuniper${NC}   - Create Juniper vSRX router"
+echo -e "  ${GREEN}mkcsr1000v${NC}  - Create Cisco CSR1000v router"
+echo -e "  ${GREEN}mkviosl2${NC}    - Create Cisco IOSvL2 switch"
 echo ""
-echo "⚠️  IMPORTANT - Next Steps:"
-echo "   1. Add router images to /var/lib/libvirt/images/"
-echo "      - Juniper: /var/lib/libvirt/images/juniper/vsrx3-*.qcow2"
-echo "      - Cisco:   /var/lib/libvirt/images/cisco/csr1000v-*.qcow2"
+echo -e "${YELLOW}Next Steps:${NC}"
+echo -e "  1. Add router/switch images to /var/lib/libvirt/images/"
+echo -e "     - Juniper: /var/lib/libvirt/images/juniper/"
+echo -e "     - Cisco:   /var/lib/libvirt/images/cisco/"
+echo -e "  2. Update image paths in scripts:"
+echo -e "     - ${GREEN}sudo nano /usr/local/bin/mkjuniper${NC}"
+echo -e "     - ${GREEN}sudo nano /usr/local/bin/mkcsr1000v${NC}"
+echo -e "     - ${GREEN}sudo nano /usr/local/bin/mkviosl2${NC}"
+echo -e "  3. Create your first device:"
+echo -e "     - ${GREEN}sudo mkjuniper r1${NC}      (Juniper router)"
+echo -e "     - ${GREEN}sudo mkcsr1000v csr1${NC}   (Cisco router)"
+echo -e "     - ${GREEN}sudo mkviosl2 sw1${NC}      (Cisco switch)"
 echo ""
-echo "   2. Update image paths in scripts:"
-echo "      - Edit /usr/local/bin/mkjuniper (line 13)"
-echo "      - Edit /usr/local/bin/mkcsr1000v (line 13)"
+echo -e "${BLUE}Service Management:${NC}"
+echo -e "  Status:  ${GREEN}sudo systemctl status vrhost-api vrhost-web${NC}"
+echo -e "  Restart: ${GREEN}sudo systemctl restart vrhost-api vrhost-web${NC}"
+echo -e "  Logs:    ${GREEN}sudo journalctl -u vrhost-api -f${NC}"
 echo ""
-echo "📊 Service Management:"
-echo "   Status:  systemctl status vrhost-api vrhost-web"
-echo "   Start:   systemctl start vrhost-api vrhost-web"
-echo "   Stop:    systemctl stop vrhost-api vrhost-web"
-echo "   Restart: systemctl restart vrhost-api vrhost-web"
+echo -e "${BLUE}Documentation:${NC}"
+echo -e "  README:  ${GREEN}cat /opt/vrhost-lab/README.md${NC}"
+echo -e "  Scripts: ${GREEN}cat /opt/vrhost-lab/scripts/README.md${NC}"
 echo ""
-echo "📝 View Logs:"
-echo "   API:     journalctl -u vrhost-api -f"
-echo "   Web:     journalctl -u vrhost-web -f"
-echo ""
-echo "📚 Documentation:"
-echo "   GitHub:  https://github.com/Dubzyy/vrhost-lab"
-echo "   README:  $INSTALL_DIR/README.md"
-echo ""
-echo "🎉 Happy Lab Building!"
+echo -e "${GREEN}Happy Labbing! 🎉${NC}"
 echo ""

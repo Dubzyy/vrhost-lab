@@ -1,0 +1,55 @@
+#!/bin/bash
+
+SWITCH_NAME=$1
+RAM=2048        # 2GB RAM
+VCPUS=2         # 2 vCPUs
+BASE_IMAGE="/var/lib/libvirt/images/cisco/viosl2-20180619.qcow2"
+DISK_PATH="/var/lib/libvirt/images/${SWITCH_NAME}.qcow2"
+
+if [ -z "$SWITCH_NAME" ]; then
+    echo "Usage: $0 <switch-name>"
+    exit 1
+fi
+
+echo "Creating Cisco IOSvL2 Switch: ${SWITCH_NAME}"
+
+# Create qcow2 disk with backing image
+qemu-img create -q -f qcow2 -F qcow2 -o backing_file=${BASE_IMAGE} ${DISK_PATH}
+
+# Create VM with 16 network interfaces for switch ports
+virt-install \
+  --name="${SWITCH_NAME}" \
+  --memory="${RAM}" \
+  --vcpus="${VCPUS}" \
+  --disk path="${DISK_PATH}",device=disk,bus=sata,format=qcow2 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --network bridge=br0,model=e1000 \
+  --boot hd \
+  --graphics vnc,listen=0.0.0.0 \
+  --serial pty \
+  --console pty,target_type=serial \
+  --noautoconsole \
+  --os-variant=linux2022 \
+  --import
+
+echo ""
+echo "✅ Cisco IOSvL2 Switch ${SWITCH_NAME} created!"
+echo ""
+echo "Boot time: ~2-3 minutes"
+echo "Access:"
+echo "  VNC:     virsh vncdisplay ${SWITCH_NAME}"
+echo "  Console: virsh console ${SWITCH_NAME}"

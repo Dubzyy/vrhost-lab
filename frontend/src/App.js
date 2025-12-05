@@ -19,7 +19,7 @@ function App() {
   // New Router form
   const [newRouterName, setNewRouterName] = useState('');
   const [newRouterIP, setNewRouterIP] = useState('');
-  const [newRouterType, setNewRouterType] = useState('juniper');  // Changed default
+  const [newRouterType, setNewRouterType] = useState('juniper');
   const [newRouterRAM, setNewRouterRAM] = useState(4);
   const [newRouterCPUs, setNewRouterCPUs] = useState(2);
   const [routerCreating, setRouterCreating] = useState(false);
@@ -70,7 +70,7 @@ function App() {
 
   const createRouter = async () => {
     if (!newRouterName || !newRouterIP) {
-      alert('Please fill in router name and IP address');
+      alert('Please fill in device name and IP address');
       return;
     }
 
@@ -92,10 +92,16 @@ function App() {
       setNewRouterCPUs(2);
       loadData();
 
-      const bootTime = newRouterType === 'cisco' ? '3-5 minutes' : '90 seconds';
-      alert(`Router created successfully! Boot time: ~${bootTime}`);
+      const bootTimeMap = {
+        'cisco': '3-5 minutes',
+        'cisco-switch': '2-3 minutes',
+        'juniper': '90 seconds',
+        'juniper-switch': '3-4 minutes'
+      };
+      const bootTime = bootTimeMap[newRouterType] || '2-3 minutes';
+      alert(`Device created successfully! Boot time: ~${bootTime}`);
     } catch (error) {
-      alert('Failed to create router: ' + (error.response?.data?.detail || error.message));
+      alert('Failed to create device: ' + (error.response?.data?.detail || error.message));
     } finally {
       setRouterCreating(false);
     }
@@ -120,7 +126,7 @@ function App() {
   };
 
   const deleteLab = async (labName) => {
-    if (!window.confirm(`Delete lab ${labName}? (Routers will not be deleted)`)) return;
+    if (!window.confirm(`Delete lab ${labName}? (Devices will not be deleted)`)) return;
     try {
       await labAPI.delete(labName);
       if (selectedLab === labName) setSelectedLab(null);
@@ -142,7 +148,7 @@ function App() {
       // Refresh after 1 second to get actual state
       setTimeout(loadData, 1000);
     } catch (error) {
-      alert('Failed to start router: ' + error.message);
+      alert('Failed to start device: ' + error.message);
       loadData(); // Reload on error
     }
   };
@@ -159,18 +165,18 @@ function App() {
       // Refresh after 1 second to get actual state
       setTimeout(loadData, 1000);
     } catch (error) {
-      alert('Failed to stop router: ' + error.message);
+      alert('Failed to stop device: ' + error.message);
       loadData(); // Reload on error
     }
   };
 
   const handleDelete = async (name) => {
-    if (!window.confirm(`Delete router ${name}?`)) return;
+    if (!window.confirm(`Delete device ${name}?`)) return;
     try {
       await routerAPI.delete(name);
       loadData();
     } catch (error) {
-      alert('Failed to delete router: ' + error.message);
+      alert('Failed to delete device: ' + error.message);
     }
   };
 
@@ -186,7 +192,7 @@ function App() {
       }
 
       const consoleUrl = `http://${consoleHost}:${port}`;
-      console.log('Opening console:', consoleUrl);  // Debug log
+      console.log('Opening console:', consoleUrl);
 
       window.open(consoleUrl, `console-${name}`, 'width=1200,height=800');
     } catch (error) {
@@ -212,12 +218,27 @@ function App() {
     }
   };
 
-  // Helper function to get router type badge styling
+  // Helper function to get router/switch type badge styling
   const getRouterTypeBadge = (routerType) => {
-    if (routerType === 'cisco' || routerType === 'csr1000v' || routerType === 'csr') {
-      return { class: 'bg-blue-600 text-white', label: 'Cisco' };
+    if (routerType === 'cisco') {
+      return { class: 'bg-blue-600 text-white', label: 'Cisco Router' };
+    } else if (routerType === 'cisco-switch') {
+      return { class: 'bg-blue-500 text-white', label: 'Cisco Switch' };
+    } else if (routerType === 'juniper-switch') {
+      return { class: 'bg-green-500 text-white', label: 'Juniper Switch' };
     }
-    return { class: 'bg-green-600 text-white', label: 'Juniper' };
+    return { class: 'bg-green-600 text-white', label: 'Juniper Router' };
+  };
+
+  // Helper function to get device description
+  const getDeviceDescription = (routerType) => {
+    const descriptions = {
+      'juniper': '🟢 Juniper vSRX - 4GB RAM, 2 vCPU, ~90 sec boot',
+      'cisco': '🔷 Cisco CSR1000v - 4GB RAM, 2 vCPU, ~3-5 min boot',
+      'cisco-switch': '🔹 Cisco IOSvL2 - 2GB RAM, 2 vCPU, ~2-3 min boot, 16 ports',
+      'juniper-switch': '🟩 Juniper vQFX - 4GB RAM, 2 vCPU, ~3-4 min boot (Coming Soon)'
+    };
+    return descriptions[routerType] || '';
   };
 
   if (loading) {
@@ -235,7 +256,7 @@ function App() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-vrhost-primary">VRHost Lab</h1>
-              <p className="text-gray-400 text-sm">Lightweight network lab platform</p>
+              <p className="text-gray-400 text-sm">Multi-vendor network lab platform</p>
             </div>
             <div className="flex gap-4">
               <button
@@ -248,7 +269,7 @@ function App() {
                 onClick={() => setShowNewRouterModal(true)}
                 className="bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors"
               >
-                + New Router
+                + New Device
               </button>
             </div>
           </div>
@@ -263,7 +284,7 @@ function App() {
               <div className="text-3xl font-bold text-white">{labs.length}</div>
             </div>
             <div className="bg-vrhost-dark p-6 rounded-lg border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Total Routers</div>
+              <div className="text-gray-400 text-sm mb-2">Total Devices</div>
               <div className="text-3xl font-bold text-vrhost-primary">{stats.vms.running} / {stats.vms.total}</div>
             </div>
             <div className="bg-vrhost-dark p-6 rounded-lg border border-gray-700">
@@ -319,7 +340,7 @@ function App() {
                     !selectedLab ? 'bg-vrhost-primary text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 >
-                  All Routers
+                  All Devices
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
@@ -366,7 +387,7 @@ function App() {
             <div className="bg-vrhost-dark rounded-lg border border-gray-700 overflow-hidden">
               <div className="p-6 border-b border-gray-700">
                 <h2 className="text-xl font-bold text-white">
-                  {selectedLab ? `${selectedLab} - Routers` : 'All Routers'}
+                  {selectedLab ? `${selectedLab} - Devices` : 'All Devices'}
                 </h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
@@ -516,22 +537,22 @@ function App() {
         </div>
       )}
 
-      {/* New Router Modal */}
+      {/* New Device Modal */}
       {showNewRouterModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-vrhost-dark p-8 rounded-lg border border-gray-700 w-full max-w-lg">
-            <h2 className="text-2xl font-bold text-white mb-6">Create New Router</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Create New Device</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Router Name *</label>
+                <label className="block text-gray-400 text-sm mb-2">Device Name *</label>
                 <input
                   type="text"
                   value={newRouterName}
                   onChange={(e) => setNewRouterName(e.target.value)}
                   className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
-                  placeholder="r1, csr-r1, or jncis-sp-r1"
+                  placeholder="r1, sw1, csr-r1, or jncis-sp-r1"
                 />
-                <p className="text-xs text-gray-500 mt-1">Tip: Use lab-name prefix (e.g. jncis-sp-r1) to group routers in labs</p>
+                <p className="text-xs text-gray-500 mt-1">Tip: Use lab-name prefix (e.g. jncis-sp-r1) to group devices in labs</p>
               </div>
               <div>
                 <label className="block text-gray-400 text-sm mb-2">IP Address *</label>
@@ -544,19 +565,23 @@ function App() {
                 />
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2 font-semibold">Router Type</label>
+                <label className="block text-gray-400 text-sm mb-2 font-semibold">Device Type</label>
                 <select
                   value={newRouterType}
                   onChange={(e) => setNewRouterType(e.target.value)}
                   className="w-full bg-vrhost-darker border border-gray-700 rounded px-4 py-2 text-white focus:border-vrhost-primary outline-none"
                 >
-                  <option value="juniper">Juniper vSRX (Virtual Firewall/Router)</option>
-                  <option value="cisco">Cisco CSR1000v (Cloud Services Router)</option>
+                  <optgroup label="Routers">
+                    <option value="juniper">Juniper vSRX</option>
+                    <option value="cisco">Cisco CSR1000v</option>
+                  </optgroup>
+                  <optgroup label="Switches">
+                    <option value="cisco-switch">Cisco IOSvL2</option>
+                    <option value="juniper-switch" disabled>Juniper vQFX (Coming Soon)</option>
+                  </optgroup>
                 </select>
                 <p className="text-xs text-gray-400 mt-1">
-                  {newRouterType === 'cisco' 
-                    ? '🔷 Cisco CSR1000v - 4GB RAM, 2 vCPU, ~3-5 min boot time' 
-                    : '🟢 Juniper vSRX - 4GB RAM, 2 vCPU, ~90 sec boot time'}
+                  {getDeviceDescription(newRouterType)}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -584,9 +609,11 @@ function App() {
                 </div>
               </div>
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3 text-sm text-yellow-300">
-                ⚠️ {newRouterType === 'cisco' 
-                  ? 'Cisco CSR1000v takes 3-5 minutes to boot on first start.' 
-                  : 'Juniper vSRX takes ~90 seconds to boot.'} The router will start automatically after creation.
+                ⚠️ {newRouterType === 'cisco' && 'Cisco CSR1000v takes 3-5 minutes to boot on first start.'}
+                {newRouterType === 'cisco-switch' && 'Cisco IOSvL2 takes 2-3 minutes to boot.'}
+                {newRouterType === 'juniper' && 'Juniper vSRX takes ~90 seconds to boot.'}
+                {newRouterType === 'juniper-switch' && 'Juniper vQFX takes 3-4 minutes to boot.'}
+                {' '}The device will start automatically after creation.
               </div>
               <div className="flex gap-4 mt-6">
                 <button
@@ -594,7 +621,7 @@ function App() {
                   disabled={routerCreating}
                   className="flex-1 bg-vrhost-primary hover:bg-vrhost-secondary text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {routerCreating ? 'Creating...' : 'Create Router'}
+                  {routerCreating ? 'Creating...' : 'Create Device'}
                 </button>
                 <button
                   onClick={() => setShowNewRouterModal(false)}

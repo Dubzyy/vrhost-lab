@@ -21,15 +21,15 @@ Built for certification studies, network automation, and hands-on learning
 
 ## 📖 Overview
 
-VRHost Lab is a lightweight, web-based platform for managing multi-vendor virtual network labs. It provides an intuitive interface for creating, managing, and accessing Juniper and Cisco routers through your browser - perfect for studying for certifications like JNCIS-SP, CCNA, or building complex network topologies for testing.
+VRHost Lab is a lightweight, web-based platform for managing multi-vendor virtual network labs. It provides an intuitive interface for creating, managing, and accessing Juniper and Cisco routers and switches through your browser - perfect for studying for certifications like JNCIS-SP, CCNA, or building complex network topologies for testing.
 
 **Think EVE-NG/GNS3, but modern, lightweight, and built from the ground up for ease of use.**
 
 ### 🎯 Why VRHost Lab?
 
-- ✅ **Multi-vendor support** - Juniper vSRX and Cisco CSR1000v ready to go
+- ✅ **Multi-vendor support** - Juniper vSRX, Cisco CSR1000v, and Cisco IOSvL2 switches
 - ✅ **One-command installation** - Up and running in under 5 minutes
-- ✅ **Browser-based console** - No SSH client needed, access routers directly in your browser
+- ✅ **Browser-based console** - No SSH client needed, access devices directly in your browser
 - ✅ **Interactive topology view** - Visual network diagrams that update in real-time
 - ✅ **Modern tech stack** - FastAPI backend + React frontend = fast and responsive
 - ✅ **Open source** - Free to use, modify, and contribute
@@ -45,49 +45,51 @@ Click "Console" and you're in - no SSH client required. Powered by ttyd for secu
 - Works through SSH tunnels and SOCKS proxies
 - Session timeout and automatic cleanup
 - Perfect for remote lab access
-- Supports both Juniper and Cisco platforms
+- Supports Juniper, Cisco routers, and switches
 
 ### 🌐 **Interactive Network Topology**
 Beautiful, real-time topology visualization powered by Cytoscape.js.
 
 - **Color-coded status** - Green (running), Blue (starting), Yellow (stopping), Gray (stopped)
-- **Vendor badges** - Blue for Cisco, Green for Juniper
+- **Vendor badges** - Blue for Cisco devices, Green for Juniper devices
+- **Device type identification** - Routers vs switches clearly labeled
 - **Drag-and-drop positioning** - Arrange your topology exactly how you want
 - **Multiple layouts** - Circle, Grid, or custom arrangements
 - **Live updates** - Status changes reflected immediately
-- **Click for details** - Select nodes to see router info
+- **Click for details** - Select nodes to see device info
 
 ### 🏗️ **Multi-Lab Management**
-Organize routers into isolated lab environments.
+Organize devices into isolated lab environments.
 
 - Create separate labs for different projects or study topics
 - Start/stop entire labs with one click
-- Mix Juniper and Cisco routers in the same lab
+- Mix Juniper and Cisco devices in the same lab
 - Track resource usage per lab
 - Filter and search across labs
 
 ### 🔀 **Multi-Vendor Support**
-Work with multiple router vendors in the same platform.
+Work with multiple router and switch vendors in the same platform.
 
 - **Juniper vSRX** - Full support for virtual firewall/router
 - **Cisco CSR1000v** - Cloud Services Router for modern labs
+- **Cisco IOSvL2** - Layer 2/3 switch with 16 ports
 - Visual vendor identification with color-coded badges
 - Vendor-specific boot time warnings
 - Unified interface for all platforms
 
 ### ⚡ **Quick Actions**
-Manage routers efficiently with optimistic UI updates.
+Manage devices efficiently with optimistic UI updates.
 
-- **Start/Stop/Restart** - Control router lifecycle
+- **Start/Stop/Restart** - Control device lifecycle
 - **Delete with confirmation** - Prevent accidental deletions
-- **Bulk operations** - Manage multiple routers at once
+- **Bulk operations** - Manage multiple devices at once
 - **Real-time status** - See changes immediately
 
 ### 📊 **Real-Time Monitoring**
-Track system resources and router states.
+Track system resources and device states.
 
-- CPU and memory usage per router
-- Running vs total routers
+- CPU and memory usage per device
+- Running vs total devices
 - Vendor distribution
 - Lab statistics
 - System health monitoring
@@ -140,14 +142,40 @@ Built with remote access in mind.
 <td width="50%">
 
 **Supported Platforms**
-- ✅ **Juniper vSRX** (production)
-- ✅ **Cisco CSR1000v** (production)
-- 🔜 Arista vEOS (planned)
-- 🔜 VyOS (planned)
+- ✅ **Juniper vSRX** (router)
+- ✅ **Cisco CSR1000v** (router)
+- ✅ **Cisco IOSvL2** (switch)
+- 🔜 Juniper vQFX (planned)
 
 </td>
 </tr>
 </table>
+
+---
+
+## 🌐 Supported Platforms
+
+### ✅ Production Ready - Routers
+- **Juniper vSRX** - Virtual firewall/router
+  - Resources: 4GB RAM, 2 vCPU
+  - Boot time: ~90 seconds
+  - Features: Full JunOS, security policies, routing protocols
+
+- **Cisco CSR1000v** - Cloud Services Router
+  - Resources: 4GB RAM, 2 vCPU
+  - Boot time: ~3-5 minutes
+  - Features: Full IOS XE, MPLS, SD-WAN, VPN
+
+### ✅ Production Ready - Switches
+- **Cisco IOSvL2** - Layer 2/3 switch
+  - Resources: 2GB RAM, 2 vCPU
+  - Boot time: ~2-3 minutes
+  - Features: 16 ports (Gi0/0-Gi3/3), VLANs, STP, trunking, L3 routing
+
+### 🔜 Planned (Phase 3)
+- **Juniper vQFX** - Virtual QFX switch
+- **Arista vEOS** - Virtual Arista switch
+- **Cisco Nexus 9000v** - Data center switch
 
 ---
 
@@ -160,11 +188,12 @@ Built with remote access in mind.
 | **CPU** | 4 cores | 8 cores | 16+ cores |
 | **RAM** | 16GB | 32GB | 64GB+ |
 | **Disk** | 100GB | 250GB | 500GB+ SSD |
-| **Routers** | 2-3 | 5-10 | 15+ |
+| **Devices** | 2-3 | 5-10 | 15+ |
 
 **Resource Notes:**
 - Juniper vSRX: 4GB RAM, 2 vCPU per router (minimum)
 - Cisco CSR1000v: 4GB RAM, 2 vCPU per router (minimum)
+- Cisco IOSvL2: 2GB RAM, 2 vCPU per switch (minimum)
 - Plan ~8GB RAM overhead for host OS and services
 
 ### Software Prerequisites
@@ -173,7 +202,7 @@ Built with remote access in mind.
 - **Access**: Root or sudo privileges
 - **Virtualization**: Intel VT-x or AMD-V (KVM support required)
 - **Network**: Internet connection for dependencies
-- **Router Images**: You must provide your own router images (see below)
+- **Device Images**: You must provide your own router/switch images (see below)
 
 ### Deployment Options
 
@@ -203,14 +232,14 @@ sudo bash install.sh
 - ✅ Installs Node.js 20.x, Python 3.11+, KVM, QEMU, libvirt, ttyd
 - ✅ Creates Python virtual environment with FastAPI
 - ✅ Builds React frontend for production
-- ✅ Installs automation scripts (mkjuniper, mkcsr1000v)
+- ✅ Installs automation scripts (mkjuniper, mkcsr1000v, mkviosl2)
 - ✅ Configures systemd services (vrhost-api, vrhost-web)
 - ✅ Verifies KVM virtualization support
 - ✅ Starts the platform automatically on port 3000
 
-### Post-Installation: Add Router Images
+### Post-Installation: Add Device Images
 
-**VRHost Lab does not include router images due to licensing restrictions. You must provide your own.**
+**VRHost Lab does not include device images due to licensing restrictions. You must provide your own.**
 
 #### Option 1: Juniper vSRX
 
@@ -224,10 +253,10 @@ sudo bash install.sh
 ```bash
    # Create directory
    sudo mkdir -p /var/lib/libvirt/images/juniper
-   
+
    # Move downloaded image
    sudo mv ~/Downloads/junos-vsrx3-*.qcow2 /var/lib/libvirt/images/juniper/
-   
+
    # Set permissions
    sudo chmod 644 /var/lib/libvirt/images/juniper/*.qcow2
 ```
@@ -251,13 +280,13 @@ sudo bash install.sh
    # Extract archive
    cd ~/Downloads
    tar -xzf csr1000vng-universalk9.*.tgz
-   
+
    # Create directory
    sudo mkdir -p /var/lib/libvirt/images/cisco
-   
+
    # Move qcow2 file
    sudo mv */virtioa.qcow2 /var/lib/libvirt/images/cisco/csr1000v-17.03.04a.qcow2
-   
+
    # Set permissions
    sudo chmod 644 /var/lib/libvirt/images/cisco/*.qcow2
 ```
@@ -265,6 +294,36 @@ sudo bash install.sh
 3. **Update script:**
 ```bash
    sudo nano /usr/local/bin/mkcsr1000v
+   # Update line 13 with your image filename
+```
+
+#### Option 3: Cisco IOSvL2 (Switch)
+
+1. **Download image:**
+   - Visit: https://software.cisco.com/download/home
+   - Search for: "IOSvL2" or "VIRL IOSv L2"
+   - Download: `viosl2-adventerprisek9-m.SSA.high_iron_*.tgz`
+   - Requires Cisco.com account (free registration)
+
+2. **Install image:**
+```bash
+   # Extract archive
+   cd ~/Downloads
+   tar -xzf viosl2-adventerprisek9-m.*.tgz
+
+   # Create directory (if not exists)
+   sudo mkdir -p /var/lib/libvirt/images/cisco
+
+   # Move qcow2 file
+   sudo mv viosl2-*/virtioa.qcow2 /var/lib/libvirt/images/cisco/viosl2-20180619.qcow2
+
+   # Set permissions
+   sudo chmod 644 /var/lib/libvirt/images/cisco/*.qcow2
+```
+
+3. **Update script:**
+```bash
+   sudo nano /usr/local/bin/mkviosl2
    # Update line 13 with your image filename
 ```
 
@@ -285,28 +344,36 @@ http://YOUR_SERVER_IP:3000
 http://YOUR_SERVER_IP:8000/docs
 ```
 
-### Create Your First Router
+### Create Your First Devices
 
-**Option A: Juniper vSRX**
+**Option A: Juniper vSRX Router**
 ```bash
 sudo mkjuniper r1
 # Wait ~90 seconds for boot
 # Access via web interface - click "Console" button
 ```
 
-**Option B: Cisco CSR1000v**
+**Option B: Cisco CSR1000v Router**
 ```bash
 sudo mkcsr1000v csr-r1
 # Wait ~3-5 minutes for first boot
 # Access via web interface - click "Console" button
 ```
 
+**Option C: Cisco IOSvL2 Switch**
+```bash
+sudo mkviosl2 sw1
+# Wait ~2-3 minutes for boot
+# Access via web interface - click "Console" button
+# 16 ports available: Gi0/0 through Gi3/3
+```
+
 **Via Web Interface:**
-1. Click "+ New Router"
-2. Enter name (e.g., "r1" or "csr-r1")
+1. Click "+ New Device"
+2. Enter name (e.g., "r1", "csr-r1", or "sw1")
 3. Enter IP address (e.g., "10.10.50.11")
-4. Select router type (Juniper or Cisco)
-5. Click "Create Router"
+4. Select device type (Juniper Router, Cisco Router, or Cisco Switch)
+5. Click "Create Device"
 6. Wait for boot, then click "Console" to access CLI
 
 ---
@@ -393,9 +460,10 @@ tailscale ip -4
 │                                                                   │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │
 │  │ Juniper  │  │ Juniper  │  │  Cisco   │  │    Cisco     │    │
-│  │  vSRX-1  │  │  vSRX-2  │  │ CSR1000v │  │  CSR1000v-2  │    │
-│  │ (4GB/2C) │  │ (4GB/2C) │  │ (4GB/2C) │  │  (4GB/2C)    │    │
-│  │  ~90sec  │  │  ~90sec  │  │ ~3-5min  │  │   ~3-5min    │    │
+│  │  vSRX-1  │  │  vSRX-2  │  │ CSR1000v │  │   IOSvL2-1   │    │
+│  │ (Router) │  │ (Router) │  │ (Router) │  │   (Switch)   │    │
+│  │ 4GB/2C   │  │ 4GB/2C   │  │ 4GB/2C   │  │   2GB/2C     │    │
+│  │ ~90sec   │  │ ~90sec   │  │ ~3-5min  │  │   ~2-3min    │    │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -408,11 +476,11 @@ vrhost-lab/
 ├── backend/                    # FastAPI backend
 │   ├── main.py                # Main application entry
 │   ├── models/                # Pydantic data models
-│   │   ├── router.py          # Router model with multi-vendor support
+│   │   ├── router.py          # Router/Switch model with multi-vendor support
 │   │   ├── lab.py             # Lab model
 │   │   └── topology.py        # Topology model
 │   └── services/              # Business logic
-│       ├── router_service.py  # Multi-vendor router management
+│       ├── router_service.py  # Multi-vendor device management
 │       ├── lab_service.py     # Lab management
 │       ├── stats_service.py   # System statistics
 │       └── console_service.py # Web console (ttyd integration)
@@ -430,7 +498,9 @@ vrhost-lab/
 ├── scripts/                    # Automation scripts
 │   ├── mkjuniper              # Create Juniper vSRX router
 │   ├── mkcsr1000v             # Create Cisco CSR1000v router
-│   └── mkvm                   # Generic VM creation utility
+│   ├── mkviosl2               # Create Cisco IOSvL2 switch
+│   ├── mkvm                   # Generic VM creation utility
+│   └── README.md              # Scripts documentation
 │
 ├── docs/                       # Documentation
 │   └── ROUTER_SETUP.md        # Router configuration guide
@@ -457,22 +527,29 @@ vrhost-lab/
 ### ✅ Phase 2: Multi-Vendor Support (Complete)
 - ✅ Juniper vSRX full support (production)
 - ✅ Cisco CSR1000v full support (production)
-- ✅ Backend multi-vendor router detection
+- ✅ Cisco IOSvL2 switch support (production)
+- ✅ Backend multi-vendor device detection
 - ✅ Frontend vendor badges (blue=Cisco, green=Juniper)
-- ✅ Automated provisioning scripts for both vendors
+- ✅ Automated provisioning scripts for all platforms
 - ✅ Vendor-specific boot time handling
-- ✅ Unified console access for all platforms
+- ✅ Unified console access for routers and switches
 
-### 🔮 Phase 3: Advanced Features (Planned)
-- 🔜 Router snapshots and cloning
+### 🔮 Phase 3: Additional Platforms (In Progress)
+- 🔄 Juniper vQFX switch support (researching)
+- 🔜 Arista vEOS router/switch
+- 🔜 VyOS router support
+- 🔜 Cisco Nexus 9000v (data center)
+
+### 🚀 Phase 4: Advanced Features (Planned)
+- 🔜 Device snapshots and cloning
 - 🔜 Configuration backup/restore automation
 - 🔜 Lab templates (save/load full topologies)
 - 🔜 Network diagram export (PNG/SVG)
 - 🔜 Automated lab provisioning from YAML
 - 🔜 Configuration versioning with Git integration
-- 🔜 Bulk router operations
+- 🔜 Bulk device operations
 
-### 🚀 Phase 4: Platform Enhancement (Future)
+### 🌟 Phase 5: Platform Enhancement (Future)
 - 🔜 User authentication (JWT-based)
 - 🔜 Multi-user support with isolation
 - 🔜 Role-based access control (RBAC)
@@ -481,14 +558,6 @@ vrhost-lab/
 - 🔜 API rate limiting
 - 🔜 WebSocket for real-time updates
 - 🔜 Email notifications for lab events
-
-### 🌟 Phase 5: Additional Platforms (Future)
-- 🔜 Arista vEOS support
-- 🔜 VyOS router support
-- 🔜 Nokia VSR support
-- 🔜 Mikrotik CHR support
-- 🔜 Linux containers for endpoint hosts
-- 🔜 IOL/IOU support (Cisco legacy platforms)
 
 ---
 
@@ -499,7 +568,7 @@ vrhost-lab/
 - 🏫 **Training Labs** - Teaching network concepts, university courses
 - 🔧 **Development** - Network automation development with Ansible/Python
 - 📊 **Research** - Network behavior analysis, performance testing
-- 💼 **Professional** - Pre-production testing, change validation
+- 💼 **Professional** - Pre-production testing, change validation, switching studies
 
 ---
 
@@ -520,17 +589,17 @@ sudo systemctl restart vrhost-api vrhost-web
 sudo systemctl daemon-reload
 ```
 
-### Router Won't Boot
+### Device Won't Boot
 ```bash
 # Check VM status
 virsh list --all
-virsh dominfo router-name
+virsh dominfo device-name
 
 # Check KVM support
 sudo kvm-ok
 
 # View VM console directly
-virsh console router-name
+virsh console device-name
 # Press Ctrl+] to exit
 
 # Check libvirt logs
@@ -575,9 +644,15 @@ sudo systemctl restart vrhost-web
 - Verify image path in `/usr/local/bin/mkcsr1000v`
 - First boot takes 3-5 minutes (hardware initialization)
 - Subsequent boots: ~2 minutes
-- Use VNC if available: `virsh vncdisplay router-name`
+- Use VNC if available: `virsh vncdisplay device-name`
 
-**Note on Cisco IOSv:** Traditional IOSv images have compatibility issues with modern KVM. Use CSR1000v instead - it's designed for virtualization and works reliably.
+**Cisco IOSvL2:**
+- Verify image path in `/usr/local/bin/mkviosl2`
+- Boot time: ~2-3 minutes
+- Shows 16 ports: Gi0/0 through Gi3/3
+- Some error messages during boot are normal (NVRAM warnings)
+
+**Note on Cisco IOSv:** Traditional IOSv router images have compatibility issues with modern KVM. Use CSR1000v for routing instead. IOSvL2 is specifically designed for switching and works reliably.
 
 ### Network Connectivity Issues
 ```bash
@@ -589,8 +664,8 @@ brctl show
 sudo virsh net-destroy default
 sudo virsh net-start default
 
-# Check router interfaces
-virsh domiflist router-name
+# Check device interfaces
+virsh domiflist device-name
 ```
 
 **For more help**, open an issue on [GitHub Issues](https://github.com/Dubzyy/vrhost-lab/issues).
@@ -631,9 +706,10 @@ npm start  # Runs on port 3000 with hot reload
 
 ### Testing
 ```bash
-# Test router creation
+# Test device creation
 sudo mkjuniper test-r1
 sudo mkcsr1000v test-csr1
+sudo mkviosl2 test-sw1
 
 # Test API endpoints
 curl http://localhost:8000/api/health
@@ -678,7 +754,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact & Support
 
-**Author**: Hunter Wilson  
+**Author**: Hunter Wilson
 *Network Engineer | Full-Stack Developer*
 
 - 🐙 GitHub: [@Dubzyy](https://github.com/Dubzyy)
