@@ -27,7 +27,7 @@ VRHost Lab is a lightweight, web-based platform for managing multi-vendor virtua
 
 ### 🎯 Why VRHost Lab?
 
-- ✅ **Multi-vendor support** - Juniper vSRX, Cisco CSR1000v, and Cisco IOSvL2 switches
+- ✅ **Multi-vendor support** - Juniper vSRX/vQFX, Cisco CSR1000v/IOSvL2
 - ✅ **One-command installation** - Up and running in under 5 minutes
 - ✅ **Browser-based console** - No SSH client needed, access devices directly in your browser
 - ✅ **Interactive topology view** - Visual network diagrams that update in real-time
@@ -43,9 +43,9 @@ Click "Console" and you're in - no SSH client required. Powered by ttyd for secu
 
 - Multiple concurrent console sessions
 - Works through SSH tunnels and SOCKS proxies
-- Session timeout and automatic cleanup
+- Session timeout (10 minutes) and automatic cleanup
 - Perfect for remote lab access
-- Supports Juniper, Cisco routers, and switches
+- Supports all device types including vQFX dual-VM architecture
 
 ### 🌐 **Interactive Network Topology**
 Beautiful, real-time topology visualization powered by Cytoscape.js.
@@ -57,6 +57,7 @@ Beautiful, real-time topology visualization powered by Cytoscape.js.
 - **Multiple layouts** - Circle, Grid, or custom arrangements
 - **Live updates** - Status changes reflected immediately
 - **Click for details** - Select nodes to see device info
+- **vQFX unified view** - Shows single node for RE+PFE pair
 
 ### 🏗️ **Multi-Lab Management**
 Organize devices into isolated lab environments.
@@ -73,9 +74,11 @@ Work with multiple router and switch vendors in the same platform.
 - **Juniper vSRX** - Full support for virtual firewall/router
 - **Cisco CSR1000v** - Cloud Services Router for modern labs
 - **Cisco IOSvL2** - Layer 2/3 switch with 16 ports
+- **Juniper vQFX** - Virtual QFX switch with 12x 10GbE ports (NEW!)
 - Visual vendor identification with color-coded badges
 - Vendor-specific boot time warnings
 - Unified interface for all platforms
+- Advanced dual-VM architecture support (vQFX)
 
 ### ⚡ **Quick Actions**
 Manage devices efficiently with optimistic UI updates.
@@ -84,12 +87,13 @@ Manage devices efficiently with optimistic UI updates.
 - **Delete with confirmation** - Prevent accidental deletions
 - **Bulk operations** - Manage multiple devices at once
 - **Real-time status** - See changes immediately
+- **Unified vQFX control** - Single operation manages both RE and PFE
 
 ### 📊 **Real-Time Monitoring**
 Track system resources and device states.
 
 - CPU and memory usage per device
-- Running vs total devices
+- Running vs total devices (accounts for vQFX dual-VM)
 - Vendor distribution
 - Lab statistics
 - System health monitoring
@@ -136,7 +140,7 @@ Built with remote access in mind.
 - 🔧 KVM/QEMU virtualization
 - 🔄 systemd services
 - 🌉 Linux bridge networking
-- 🐧 Ubuntu 22.04+
+- 🐧 Ubuntu 22.04/24.04
 
 </td>
 <td width="50%">
@@ -145,7 +149,7 @@ Built with remote access in mind.
 - ✅ **Juniper vSRX** (router)
 - ✅ **Cisco CSR1000v** (router)
 - ✅ **Cisco IOSvL2** (switch)
-- 🔜 Juniper vQFX (planned)
+- ✅ **Juniper vQFX** (switch)
 
 </td>
 </tr>
@@ -172,10 +176,17 @@ Built with remote access in mind.
   - Boot time: ~2-3 minutes
   - Features: 16 ports (Gi0/0-Gi3/3), VLANs, STP, trunking, L3 routing
 
-### 🔜 Planned (Phase 3)
-- **Juniper vQFX** - Virtual QFX switch
+- **Juniper vQFX** - Virtual QFX switch (NEW!)
+  - Resources: 4GB RAM total (2GB RE + 2GB PFE), 2 vCPU
+  - Boot time: ~7-10 minutes (dual-VM architecture)
+  - Features: 12x 10GbE ports, full JunOS, VLANs, LACP, L2/L3 switching
+  - Architecture: Routing Engine (RE) + Packet Forwarding Engine (PFE)
+  - Management: Unified control through web interface
+
+### 🔜 Planned (Future)
 - **Arista vEOS** - Virtual Arista switch
 - **Cisco Nexus 9000v** - Data center switch
+- **VyOS** - Open source router
 
 ---
 
@@ -194,11 +205,12 @@ Built with remote access in mind.
 - Juniper vSRX: 4GB RAM, 2 vCPU per router (minimum)
 - Cisco CSR1000v: 4GB RAM, 2 vCPU per router (minimum)
 - Cisco IOSvL2: 2GB RAM, 2 vCPU per switch (minimum)
+- Juniper vQFX: 4GB RAM total (2GB RE + 2GB PFE), 2 vCPU per switch
 - Plan ~8GB RAM overhead for host OS and services
 
 ### Software Prerequisites
 
-- **OS**: Ubuntu 22.04 LTS or newer (Ubuntu 24.04 also supported)
+- **OS**: Ubuntu 22.04 LTS or newer (Ubuntu 24.04 recommended)
 - **Access**: Root or sudo privileges
 - **Virtualization**: Intel VT-x or AMD-V (KVM support required)
 - **Network**: Internet connection for dependencies
@@ -232,7 +244,7 @@ sudo bash install.sh
 - ✅ Installs Node.js 20.x, Python 3.11+, KVM, QEMU, libvirt, ttyd
 - ✅ Creates Python virtual environment with FastAPI
 - ✅ Builds React frontend for production
-- ✅ Installs automation scripts (mkjuniper, mkcsr1000v, mkviosl2)
+- ✅ Installs automation scripts (mkjuniper, mkcsr1000v, mkviosl2, mkvqfx)
 - ✅ Configures systemd services (vrhost-api, vrhost-web)
 - ✅ Verifies KVM virtualization support
 - ✅ Starts the platform automatically on port 3000
@@ -327,6 +339,35 @@ sudo bash install.sh
    # Update line 13 with your image filename
 ```
 
+#### Option 4: Juniper vQFX (Switch) - NEW!
+
+1. **Download images:**
+   - Visit: https://support.juniper.net/support/downloads/
+   - Navigate to: vQFX → Juniper vQFX Virtual Switch
+   - Download BOTH images (requires free Juniper account):
+     - **RE (Routing Engine)**: `vqfx-*-re-qemu.qcow2`
+     - **PFE (Packet Forwarding Engine)**: `vqfx-*-pfe-qemu.qcow2`
+   - Recommended: vQFX 20.2R1 or newer
+
+2. **Install images:**
+```bash
+   # Create directory (if not exists)
+   sudo mkdir -p /var/lib/libvirt/images/juniper
+
+   # Move both images
+   sudo mv ~/Downloads/vqfx-*-re-qemu.qcow2 /var/lib/libvirt/images/juniper/
+   sudo mv ~/Downloads/vqfx-*-pfe-qemu.qcow2 /var/lib/libvirt/images/juniper/
+
+   # Set permissions
+   sudo chmod 644 /var/lib/libvirt/images/juniper/*.qcow2
+```
+
+3. **Update script:**
+```bash
+   sudo nano /usr/local/bin/mkvqfx
+   # Update lines 13-14 with your image filenames
+```
+
 ### Access the Platform
 
 **Local access:**
@@ -348,7 +389,7 @@ http://YOUR_SERVER_IP:8000/docs
 
 **Option A: Juniper vSRX Router**
 ```bash
-sudo mkjuniper r1
+sudo mkjuniper r1 10.10.50.10
 # Wait ~90 seconds for boot
 # Access via web interface - click "Console" button
 ```
@@ -368,11 +409,26 @@ sudo mkviosl2 sw1
 # 16 ports available: Gi0/0 through Gi3/3
 ```
 
+**Option D: Juniper vQFX Switch** (NEW!)
+```bash
+sudo mkvqfx sw2
+# Wait ~7-10 minutes for boot (creates 2 VMs: RE + PFE)
+# Access via web interface - click "Console" button
+# 12x 10GbE ports available: xe-0/0/0 through xe-0/0/11
+
+# To delete vQFX (removes both RE and PFE)
+sudo mkvqfx-delete sw2
+```
+
 **Via Web Interface:**
 1. Click "+ New Device"
-2. Enter name (e.g., "r1", "csr-r1", or "sw1")
-3. Enter IP address (e.g., "10.10.50.11")
-4. Select device type (Juniper Router, Cisco Router, or Cisco Switch)
+2. Enter name (e.g., "r1", "csr-r1", "sw1", or "sw2")
+3. Enter IP address for routers (optional for switches)
+4. Select device type:
+   - Juniper vSRX (Router)
+   - Cisco CSR1000v (Router)
+   - Cisco IOSvL2 (Switch)
+   - Juniper vQFX (Switch) - NEW!
 5. Click "Create Device"
 6. Wait for boot, then click "Console" to access CLI
 
@@ -446,7 +502,7 @@ tailscale ip -4
 │                                                                   │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  RouterService  │  LabService   │  ConsoleService (ttyd)  │  │
-│  │  StatsService   │  TopologyService                        │  │
+│  │  StatsService   │  TopologyService  │  (10min timeout)   │  │
 │  └──────────┬──────────────┬──────────────┬──────────────────┘  │
 └─────────────┼───────────────┼──────────────┼─────────────────────┘
               │               │              │
@@ -465,6 +521,16 @@ tailscale ip -4
 │  │ 4GB/2C   │  │ 4GB/2C   │  │ 4GB/2C   │  │   2GB/2C     │    │
 │  │ ~90sec   │  │ ~90sec   │  │ ~3-5min  │  │   ~2-3min    │    │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────────┘    │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────┐        │
+│  │           Juniper vQFX-1 (Switch)                   │        │
+│  │  ┌──────────────┐          ┌──────────────┐        │        │
+│  │  │  vQFX1-RE    │◄────────►│  vQFX1-PFE   │        │        │
+│  │  │   (Mgmt)     │ Internal │  (Forwarding)│        │        │
+│  │  │   2GB/2C     │  Network │    2GB/2C    │        │        │
+│  │  └──────────────┘          └──────────────┘        │        │
+│  │         12x 10GbE ports • ~7-10min boot             │        │
+│  └─────────────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -480,15 +546,15 @@ vrhost-lab/
 │   │   ├── lab.py             # Lab model
 │   │   └── topology.py        # Topology model
 │   └── services/              # Business logic
-│       ├── router_service.py  # Multi-vendor device management
+│       ├── router_service.py  # Multi-vendor device management (vQFX support)
 │       ├── lab_service.py     # Lab management
 │       ├── stats_service.py   # System statistics
-│       └── console_service.py # Web console (ttyd integration)
+│       └── console_service.py # Web console (ttyd, 10min timeout, vQFX RE detection)
 │
 ├── frontend/                   # React frontend
 │   ├── src/
-│   │   ├── App.js             # Main component with vendor support
-│   │   ├── Topology.js        # Cytoscape topology with vendor badges
+│   │   ├── App.js             # Main component with 4-vendor support
+│   │   ├── Topology.js        # Cytoscape topology with vendor badges & status
 │   │   └── services/
 │   │       └── api.js         # API client
 │   ├── public/
@@ -499,6 +565,8 @@ vrhost-lab/
 │   ├── mkjuniper              # Create Juniper vSRX router
 │   ├── mkcsr1000v             # Create Cisco CSR1000v router
 │   ├── mkviosl2               # Create Cisco IOSvL2 switch
+│   ├── mkvqfx                 # Create Juniper vQFX switch (RE + PFE)
+│   ├── mkvqfx-delete          # Delete Juniper vQFX switch (both VMs)
 │   ├── mkvm                   # Generic VM creation utility
 │   └── README.md              # Scripts documentation
 │
@@ -528,14 +596,16 @@ vrhost-lab/
 - ✅ Juniper vSRX full support (production)
 - ✅ Cisco CSR1000v full support (production)
 - ✅ Cisco IOSvL2 switch support (production)
+- ✅ Juniper vQFX switch support (production) - **NEW!**
 - ✅ Backend multi-vendor device detection
 - ✅ Frontend vendor badges (blue=Cisco, green=Juniper)
 - ✅ Automated provisioning scripts for all platforms
 - ✅ Vendor-specific boot time handling
 - ✅ Unified console access for routers and switches
+- ✅ vQFX dual-VM architecture (RE + PFE) with unified management
+- ✅ Session management with automatic cleanup (10 min timeout)
 
-### 🔮 Phase 3: Additional Platforms (In Progress)
-- 🔄 Juniper vQFX switch support (researching)
+### 🚀 Phase 3: Additional Platforms (Future)
 - 🔜 Arista vEOS router/switch
 - 🔜 VyOS router support
 - 🔜 Cisco Nexus 9000v (data center)
@@ -568,7 +638,7 @@ vrhost-lab/
 - 🏫 **Training Labs** - Teaching network concepts, university courses
 - 🔧 **Development** - Network automation development with Ansible/Python
 - 📊 **Research** - Network behavior analysis, performance testing
-- 💼 **Professional** - Pre-production testing, change validation, switching studies
+- 💼 **Professional** - Pre-production testing, change validation, data center switching
 
 ---
 
@@ -612,7 +682,7 @@ sudo journalctl -t libvirtd -f
 ps aux | grep ttyd
 
 # Kill stuck sessions
-sudo pkill -9 ttyd
+sudo pkill -9 -f "virsh console"
 
 # Restart API to recreate console service
 sudo systemctl restart vrhost-api
@@ -652,6 +722,15 @@ sudo systemctl restart vrhost-web
 - Shows 16 ports: Gi0/0 through Gi3/3
 - Some error messages during boot are normal (NVRAM warnings)
 
+**Juniper vQFX:** (NEW!)
+- Verify BOTH image paths in `/usr/local/bin/mkvqfx` (RE and PFE)
+- Boot time: ~7-10 minutes (dual-VM architecture)
+- Check both VMs: `virsh list | grep <name>`
+- Console connects to RE automatically
+- Internal network (em1) connects RE ↔ PFE
+- 12x 10GbE ports: xe-0/0/0 through xe-0/0/11
+- To delete: Use `sudo mkvqfx-delete <name>` (removes both VMs)
+
 **Note on Cisco IOSv:** Traditional IOSv router images have compatibility issues with modern KVM. Use CSR1000v for routing instead. IOSvL2 is specifically designed for switching and works reliably.
 
 ### Network Connectivity Issues
@@ -666,6 +745,9 @@ sudo virsh net-start default
 
 # Check device interfaces
 virsh domiflist device-name
+
+# For vQFX, check internal network
+virsh net-list --all
 ```
 
 **For more help**, open an issue on [GitHub Issues](https://github.com/Dubzyy/vrhost-lab/issues).
@@ -707,9 +789,10 @@ npm start  # Runs on port 3000 with hot reload
 ### Testing
 ```bash
 # Test device creation
-sudo mkjuniper test-r1
+sudo mkjuniper test-r1 10.10.50.20
 sudo mkcsr1000v test-csr1
 sudo mkviosl2 test-sw1
+sudo mkvqfx test-sw2
 
 # Test API endpoints
 curl http://localhost:8000/api/health
