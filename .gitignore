@@ -6,3 +6,11 @@ node_modules/
 build/
 dist/
 *.log
+
+# Runtime data - should not be committed
+data/links.json
+data/*.json
+
+# Exclude everything in data/ except the .gitkeep
+data/*
+!data/.gitkeep
