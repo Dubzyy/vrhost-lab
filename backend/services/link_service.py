@@ -13,15 +13,27 @@ class LinkService:
         self._load_links()
 
     def _load_links(self):
-        """Load links from JSON file"""
+        """Load links from JSON file, create empty file if missing"""
         try:
-            if os.path.exists(self.links_file):
-                with open(self.links_file, 'r') as f:
-                    data = json.load(f)
-                    self.links = {k: Link(**v) for k, v in data.items()}
-                print(f"✓ Loaded {len(self.links)} links from {self.links_file}")
+            # Ensure data directory exists
+            os.makedirs(self.data_dir, exist_ok=True)
+            
+            # Create empty links file if it doesn't exist
+            if not os.path.exists(self.links_file):
+                print(f"ℹ Creating empty links file: {self.links_file}")
+                with open(self.links_file, 'w') as f:
+                    json.dump({}, f)
+                self.links = {}
+                return
+            
+            # Load existing links
+            with open(self.links_file, 'r') as f:
+                data = json.load(f)
+                self.links = {k: Link(**v) for k, v in data.items()}
+            print(f"✓ Loaded {len(self.links)} links from {self.links_file}")
         except Exception as e:
             print(f"⚠ Could not load links: {e}")
+            print(f"ℹ Starting with empty links")
             self.links = {}
 
     def _save_links(self):
